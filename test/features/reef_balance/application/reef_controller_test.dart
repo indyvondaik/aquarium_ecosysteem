@@ -15,7 +15,6 @@ void main() {
     expect(reef.fish, 50);
     expect(reef.crab, 6);
     expect(reef.phase, ReefRoundPhase.intro);
-    expect(reef.roundNumber, 1);
     expect(reef.choicesLeft, 2);
     expect(reef.bestScore, ReefState.initial.healthScore);
   });
@@ -90,7 +89,7 @@ void main() {
     expect(reef.phase, ReefRoundPhase.intro);
   });
 
-  test('manual reset starts a fresh next round', () {
+  test('manual reset starts a fresh game', () {
     final container = ProviderContainer();
     addTearDown(container.dispose);
     final controller = container.read(reefControllerProvider.notifier);
@@ -106,6 +105,5 @@ void main() {
     expect(reef.actionsTaken, 0);
     expect(reef.firstAction, isNull);
     expect(reef.lastAction, isNull);
-    expect(reef.roundNumber, 2);
   });
 }

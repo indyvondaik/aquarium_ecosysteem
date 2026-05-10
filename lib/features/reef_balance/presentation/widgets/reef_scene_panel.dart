@@ -2,6 +2,7 @@ import 'package:aquarium_ecosysteem/app/theme/reef_theme.dart';
 import 'package:aquarium_ecosysteem/features/reef_balance/domain/reef_action.dart';
 import 'package:aquarium_ecosysteem/features/reef_balance/domain/reef_state.dart';
 import 'package:aquarium_ecosysteem/features/reef_balance/presentation/widgets/reef_scene.dart';
+import 'package:aquarium_ecosysteem/features/reef_balance/presentation/widgets/reef_life_icon.dart';
 import 'package:flutter/material.dart';
 
 typedef ReefSceneTapCallback = void Function(double x, double y);
@@ -20,28 +21,14 @@ class ReefScenePanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 280),
-      curve: Curves.easeOutCubic,
-      decoration: BoxDecoration(
-        color: ReefColors.deepSea,
-        border: Border.all(color: ReefColors.line, width: 2),
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x240A2540),
-            blurRadius: 28,
-            offset: Offset(0, 18),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(26),
+    return ColoredBox(
+      color: ReefColors.deepSea,
+      child: ClipRect(
         child: LayoutBuilder(
           builder: (context, constraints) {
             final messageWidth = compact
-                ? constraints.maxWidth - 28
-                : (constraints.maxWidth * 0.55).clamp(300, 520).toDouble();
+                ? (constraints.maxWidth * 0.54).clamp(176.0, 300.0).toDouble()
+                : (constraints.maxWidth * 0.34).clamp(320.0, 470.0).toDouble();
 
             return GestureDetector(
               behavior: HitTestBehavior.opaque,
@@ -69,13 +56,8 @@ class ReefScenePanel extends StatelessWidget {
                     ),
                   ),
                   Positioned(
-                    top: compact ? 12 : 18,
-                    left: compact ? 12 : 18,
-                    child: _SceneBadgeCluster(reef: reef, compact: compact),
-                  ),
-                  Positioned(
-                    top: compact ? 12 : 18,
-                    right: compact ? 12 : 18,
+                    top: compact ? 112 : 140,
+                    left: compact ? 10 : 18,
                     child: _PopulationCluster(reef: reef, compact: compact),
                   ),
                   if (reef.lastAction != null)
@@ -102,42 +84,6 @@ class ReefScenePanel extends StatelessWidget {
   }
 }
 
-class _SceneBadgeCluster extends StatelessWidget {
-  const _SceneBadgeCluster({required this.reef, required this.compact});
-
-  final ReefState reef;
-  final bool compact;
-
-  @override
-  Widget build(BuildContext context) {
-    final accent = switch (reef.phase) {
-      ReefRoundPhase.intro => ReefColors.seaFoam,
-      ReefRoundPhase.reaction => ReefColors.reefGold,
-      ReefRoundPhase.result =>
-        reef.solvedRound ? ReefColors.brightAlgae : ReefColors.softCoral,
-    };
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _SceneChip(
-          icon: Icons.waves_rounded,
-          label: reef.stepLabel,
-          color: accent,
-          compact: compact,
-        ),
-        const SizedBox(height: 8),
-        _SceneChip(
-          icon: _iconForMood(reef),
-          label: reef.sceneStatus,
-          color: ReefColors.paper,
-          compact: compact,
-        ),
-      ],
-    );
-  }
-}
-
 class _PopulationCluster extends StatelessWidget {
   const _PopulationCluster({required this.reef, required this.compact});
 
@@ -150,28 +96,31 @@ class _PopulationCluster extends StatelessWidget {
       _MetricChipData(
         label: 'Algen',
         value: _algaeLevel(reef.algae),
-        icon: Icons.spa_rounded,
+        icon: ReefLifeIconType.algae,
       ),
       _MetricChipData(
-        label: 'Vis',
+        label: 'Vissen',
         value: _fishLevel(reef.fish),
-        icon: Icons.set_meal_rounded,
+        icon: ReefLifeIconType.fish,
       ),
       _MetricChipData(
-        label: 'Krab',
+        label: 'Krabben',
         value: _crabLevel(reef.crab),
-        icon: Icons.cleaning_services_rounded,
+        icon: ReefLifeIconType.crab,
       ),
     ];
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        for (var index = 0; index < metrics.length; index++) ...[
-          _MetricChip(metric: metrics[index], compact: compact),
-          if (index != metrics.length - 1) const SizedBox(height: 8),
+    return SizedBox(
+      width: compact ? 178 : 208,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (var index = 0; index < metrics.length; index++) ...[
+            _MetricChip(metric: metrics[index], compact: compact),
+            if (index != metrics.length - 1) const SizedBox(height: 8),
+          ],
         ],
-      ],
+      ),
     );
   }
 }
@@ -185,7 +134,7 @@ class _MetricChipData {
 
   final String label;
   final String value;
-  final IconData icon;
+  final ReefLifeIconType icon;
 }
 
 class _MetricChip extends StatelessWidget {
@@ -202,20 +151,39 @@ class _MetricChip extends StatelessWidget {
         vertical: compact ? 8 : 10,
       ),
       decoration: BoxDecoration(
-        color: ReefColors.paper.withValues(alpha: 0.86),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: ReefColors.line, width: 1.2),
+        color: ReefColors.paper.withValues(alpha: 0.9),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: ReefColors.navy, width: 1.2),
       ),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(metric.icon, size: compact ? 16 : 18, color: ReefColors.ink),
+          ReefLifeIcon(
+            type: metric.icon,
+            size: compact ? 16 : 18,
+            color: ReefColors.navy,
+            accentColor: ReefColors.purple.withValues(alpha: 0.72),
+            semanticLabel: metric.label,
+          ),
           const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              '${metric.label}:',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: ReefTypography.condensed(
+                size: compact ? 11 : 12,
+                color: ReefColors.ink,
+              ),
+            ),
+          ),
+          const SizedBox(width: 4),
           Text(
-            '${metric.label}: ${metric.value}',
+            metric.value,
+            maxLines: 1,
+            textAlign: TextAlign.right,
             style: ReefTypography.condensed(
               size: compact ? 11 : 12,
-              color: ReefColors.ink,
+              color: ReefColors.purple,
             ),
           ),
         ],
@@ -248,8 +216,8 @@ class _SceneMessage extends StatelessWidget {
         ),
         decoration: BoxDecoration(
           color: ReefColors.paper.withValues(alpha: 0.94),
-          border: Border.all(color: ReefColors.line, width: 1.6),
-          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: ReefColors.navy, width: 1.4),
+          borderRadius: BorderRadius.circular(8),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -264,9 +232,16 @@ class _SceneMessage extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: accent,
                     shape: BoxShape.circle,
-                    border: Border.all(color: ReefColors.line, width: 1.2),
+                    border: Border.all(color: ReefColors.navy, width: 1.2),
                   ),
-                  child: Icon(_iconForMood(reef), color: ReefColors.ink),
+                  child: Center(
+                    child: ReefLifeIcon(
+                      type: _lifeIconForMood(reef),
+                      color: ReefColors.navy,
+                      accentColor: ReefColors.paper.withValues(alpha: 0.72),
+                      size: compact ? 22 : 26,
+                    ),
+                  ),
                 ),
                 SizedBox(width: compact ? 10 : 12),
                 Expanded(
@@ -274,13 +249,11 @@ class _SceneMessage extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        reef.isResult
-                            ? 'RESULTAAT'
-                            : reef.isIntro
-                            ? 'STARTBEELD'
-                            : 'WAT VALT JE OP?',
+                        reef.headline.toUpperCase(),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                         style: ReefTypography.condensed(
-                          size: compact ? 12 : 13,
+                          size: compact ? 13 : 15,
                           color: ReefColors.navy,
                         ),
                       ),
@@ -302,7 +275,7 @@ class _SceneMessage extends StatelessWidget {
             const SizedBox(height: 10),
             Text(
               reef.observationDetail,
-              maxLines: compact ? 3 : 4,
+              maxLines: compact ? 3 : 3,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 color: ReefColors.ink,
@@ -326,49 +299,6 @@ class _SceneMessage extends StatelessWidget {
             ],
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _SceneChip extends StatelessWidget {
-  const _SceneChip({
-    required this.icon,
-    required this.label,
-    required this.color,
-    required this.compact,
-  });
-
-  final IconData icon;
-  final String label;
-  final Color color;
-  final bool compact;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: compact ? 10 : 12,
-        vertical: compact ? 8 : 9,
-      ),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.92),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: ReefColors.line, width: 1.2),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: compact ? 16 : 18, color: ReefColors.ink),
-          const SizedBox(width: 6),
-          Text(
-            label.toUpperCase(),
-            style: ReefTypography.condensed(
-              size: compact ? 12 : 13,
-              color: ReefColors.ink,
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -422,7 +352,7 @@ class _ActionSplash extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: ReefColors.paper.withValues(alpha: 0.94),
                         borderRadius: BorderRadius.circular(999),
-                        border: Border.all(color: ReefColors.line, width: 1.2),
+                        border: Border.all(color: ReefColors.navy, width: 1.2),
                       ),
                       child: Text(
                         action.buttonLabel,
@@ -448,12 +378,16 @@ class _ActionSplash extends StatelessWidget {
                         angle: (index - 1.5) * 0.2 * (1 - value),
                         child: Transform.scale(
                           scale: 0.7 + value * 0.45,
-                          child: Icon(
-                            visual.icon,
+                          child: ReefLifeIcon(
+                            type: visual.type,
                             size: 22 + index.toDouble(),
                             color: visual.color.withValues(
                               alpha: 0.9 - value * 0.3,
                             ),
+                            accentColor: visual.color.withValues(
+                              alpha: 0.5 - value * 0.1,
+                            ),
+                            semanticLabel: visual.semanticLabel,
                           ),
                         ),
                       ),
@@ -503,24 +437,32 @@ class _ResultPulse extends StatelessWidget {
 }
 
 class _ActionVisual {
-  const _ActionVisual({required this.icon, required this.color});
+  const _ActionVisual({
+    required this.type,
+    required this.color,
+    required this.semanticLabel,
+  });
 
-  final IconData icon;
+  final ReefLifeIconType type;
   final Color color;
+  final String semanticLabel;
 
   factory _ActionVisual.from(ReefAction action) {
     return switch (action) {
       ReefAction.algae => const _ActionVisual(
-        icon: Icons.spa_rounded,
+        type: ReefLifeIconType.algae,
         color: ReefColors.brightAlgae,
+        semanticLabel: 'Alg',
       ),
       ReefAction.fish => const _ActionVisual(
-        icon: Icons.set_meal_rounded,
+        type: ReefLifeIconType.fish,
         color: ReefColors.reefGold,
+        semanticLabel: 'Vis',
       ),
       ReefAction.crab => const _ActionVisual(
-        icon: Icons.cleaning_services_rounded,
+        type: ReefLifeIconType.crab,
         color: ReefColors.softCoral,
+        semanticLabel: 'Krab',
       ),
     };
   }
@@ -537,14 +479,14 @@ Color _accentForMood(ReefState reef) {
   };
 }
 
-IconData _iconForMood(ReefState reef) {
+ReefLifeIconType _lifeIconForMood(ReefState reef) {
   return switch (reef.mood) {
-    ReefMood.algaeBloom => Icons.spa_rounded,
-    ReefMood.hungry => Icons.no_meals_rounded,
-    ReefMood.overCleaned => Icons.cleaning_services_rounded,
-    ReefMood.crowded => Icons.waves_rounded,
-    ReefMood.thriving => Icons.auto_awesome_rounded,
-    ReefMood.balanced => Icons.favorite_rounded,
+    ReefMood.algaeBloom => ReefLifeIconType.algae,
+    ReefMood.hungry => ReefLifeIconType.fish,
+    ReefMood.overCleaned => ReefLifeIconType.crab,
+    ReefMood.crowded => ReefLifeIconType.fish,
+    ReefMood.thriving => ReefLifeIconType.algae,
+    ReefMood.balanced => ReefLifeIconType.fish,
   };
 }
 

@@ -17,7 +17,6 @@ class ReefState {
     required this.rippleX,
     required this.rippleY,
     required this.phase,
-    required this.roundNumber,
     required this.resultVisible,
     this.lastAction,
     this.firstAction,
@@ -33,7 +32,6 @@ class ReefState {
     rippleX: 0.52,
     rippleY: 0.42,
     phase: ReefRoundPhase.intro,
-    roundNumber: 1,
     resultVisible: false,
   );
 
@@ -46,7 +44,6 @@ class ReefState {
   final double rippleX;
   final double rippleY;
   final ReefRoundPhase phase;
-  final int roundNumber;
   final bool resultVisible;
   final ReefAction? lastAction;
   final ReefAction? firstAction;
@@ -105,8 +102,8 @@ class ReefState {
   };
 
   String get stepLabel => switch (phase) {
-    ReefRoundPhase.intro => 'Stap 1 van 2',
-    ReefRoundPhase.reaction => 'Stap 2 van 2',
+    ReefRoundPhase.intro => 'Kies verandering',
+    ReefRoundPhase.reaction => 'Kies oplossing',
     ReefRoundPhase.result => 'Resultaat',
   };
 
@@ -123,7 +120,8 @@ class ReefState {
     return switch (phase) {
       ReefRoundPhase.intro =>
         'Kies eerst wat bezoekers aan het rif veranderen.',
-      ReefRoundPhase.reaction => 'Wat valt je op? Kies nu de beste oplossing.',
+      ReefRoundPhase.reaction =>
+        'Kijk naar het rif en kies de beste oplossing.',
       ReefRoundPhase.result =>
         solvedRound
             ? 'Goed gezien. Groei en eten zijn weer in evenwicht.'
@@ -197,7 +195,7 @@ class ReefState {
   String get autoResetLabel {
     return solvedRound
         ? 'Nieuw spel start zo vanzelf.'
-        : 'Nog even kijken... daarna begint er automatisch een nieuwe ronde.';
+        : 'Nog even kijken... daarna begint automatisch een nieuw spel.';
   }
 
   String get sceneStatus {
@@ -302,7 +300,6 @@ class ReefState {
     double? rippleX,
     double? rippleY,
     ReefRoundPhase? phase,
-    int? roundNumber,
     bool? resultVisible,
     ReefAction? lastAction,
     ReefAction? firstAction,
@@ -319,7 +316,6 @@ class ReefState {
       rippleX: rippleX ?? this.rippleX,
       rippleY: rippleY ?? this.rippleY,
       phase: phase ?? this.phase,
-      roundNumber: roundNumber ?? this.roundNumber,
       resultVisible: resultVisible ?? this.resultVisible,
       lastAction: clearLastAction ? null : lastAction ?? this.lastAction,
       firstAction: clearFirstAction ? null : firstAction ?? this.firstAction,
@@ -339,7 +335,6 @@ class ReefState {
             other.rippleX == rippleX &&
             other.rippleY == rippleY &&
             other.phase == phase &&
-            other.roundNumber == roundNumber &&
             other.resultVisible == resultVisible &&
             other.lastAction == lastAction &&
             other.firstAction == firstAction;
@@ -358,7 +353,6 @@ class ReefState {
       rippleY,
       lastAction,
       phase,
-      roundNumber,
       resultVisible,
       firstAction,
     );

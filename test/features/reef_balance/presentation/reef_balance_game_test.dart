@@ -13,11 +13,12 @@ void main() {
     );
 
     expect(find.text('RIF IN BALANS'), findsOneWidget);
-    expect(find.textContaining('Kies 2 keer'), findsOneWidget);
-    expect(find.text('SUPERREGEL'), findsOneWidget);
-    expect(find.text('WAT VALT JE OP?'), findsOneWidget);
+    expect(find.text('Het rif is gezond en in balans'), findsOneWidget);
+    expect(find.text('SUPERREGEL'), findsNothing);
+    expect(find.text('WAT VALT JE OP?'), findsNothing);
     expect(find.text('MEER ALGEN'), findsOneWidget);
-    expect(find.text('NOG 2 KEUZES'), findsOneWidget);
+    expect(find.text('MEER VISSEN'), findsOneWidget);
+    expect(find.text('MEER KRABBEN'), findsOneWidget);
   });
 
   testWidgets('renders the compact reef layout', (tester) async {
@@ -29,9 +30,9 @@ void main() {
     );
 
     expect(find.text('RIF IN BALANS'), findsOneWidget);
-    expect(find.text('SUPERREGEL'), findsOneWidget);
-    expect(find.text('Meer vissen'), findsOneWidget);
-    expect(find.text('WAT VALT JE OP?'), findsOneWidget);
+    expect(find.text('SUPERREGEL'), findsNothing);
+    expect(find.text('MEER VISSEN'), findsOneWidget);
+    expect(find.text('WAT VALT JE OP?'), findsNothing);
   });
 
   testWidgets('playing the correct route shows a restored reef', (
@@ -48,7 +49,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
 
     expect(find.text('Je hebt het ecosysteem veranderd...'), findsOneWidget);
-    expect(find.text('GOEDE HINT'), findsOneWidget);
+    expect(find.text('TE VEEL ALGEN'), findsOneWidget);
 
     await tester.tap(find.text('MEER VISSEN'));
     await tester.pump(const Duration(milliseconds: 300));

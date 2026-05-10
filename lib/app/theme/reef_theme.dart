@@ -3,13 +3,13 @@ import 'package:flutter/material.dart';
 class ReefColors {
   const ReefColors._();
 
-  static const paper = Color(0xFFFFFEFA);
-  static const ink = Color(0xFF11284C);
-  static const navy = Color(0xFF1F3E68);
-  static const deepSea = Color(0xFF0E3557);
+  static const paper = Color(0xFFFFFFFF);
+  static const ink = Color(0xFF1C355E);
+  static const navy = Color(0xFF1C355E);
+  static const deepSea = Color(0xFF1C355E);
   static const lagoon = Color(0xFF287C8E);
   static const water = Color(0xFF67C7D2);
-  static const purple = Color(0xFF67507F);
+  static const purple = Color(0xFF624B78);
   static const coral = Color(0xFFC75142);
   static const softCoral = Color(0xFFFF8C73);
   static const reefGold = Color(0xFFF6D44A);
@@ -17,20 +17,20 @@ class ReefColors {
   static const algae = Color(0xFF88A64D);
   static const brightAlgae = Color(0xFFB8D85B);
   static const seaFoam = Color(0xFFDDEBE6);
-  static const line = Color(0xFF111111);
+  static const line = Color(0xFF1C355E);
 }
 
 class ReefTypography {
   const ReefTypography._();
 
-  static const displayFamily = 'Impact';
-  static const labelFamily = 'Arial Black';
+  static const displayFamily = 'Festivo Letters NO1';
+  static const labelFamily = 'Festivo Letters NO1';
 
   static TextStyle display({double size = 64, Color color = ReefColors.ink}) {
     return TextStyle(
       color: color,
       fontFamily: displayFamily,
-      fontFamilyFallback: const ['Arial Black', 'Roboto'],
+      fontFamilyFallback: const ['Impact', 'Arial Black', 'Roboto'],
       fontSize: size,
       fontWeight: FontWeight.w900,
       height: 0.9,
@@ -42,7 +42,7 @@ class ReefTypography {
     return TextStyle(
       color: color,
       fontFamily: labelFamily,
-      fontFamilyFallback: const ['Roboto Condensed', 'Roboto'],
+      fontFamilyFallback: const ['Arial Black', 'Roboto Condensed', 'Roboto'],
       fontSize: size,
       fontWeight: FontWeight.w900,
       height: 1,
@@ -63,6 +63,8 @@ class ReefTheme {
 
     return ThemeData(
       useMaterial3: true,
+      fontFamily: ReefTypography.displayFamily,
+      fontFamilyFallback: const ['Arial Black', 'Roboto Condensed', 'Roboto'],
       colorScheme: scheme.copyWith(
         primary: ReefColors.navy,
         secondary: ReefColors.purple,

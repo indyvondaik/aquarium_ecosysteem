@@ -90,6 +90,7 @@ class _ReefScenePainter extends CustomPainter {
     _paintBubbles(canvas, size);
     _paintMoodHaze(canvas, size);
     _paintRipple(canvas, size);
+    _paintActionCreatureBurst(canvas, size);
   }
 
   void _paintWater(Canvas canvas, Size size) {
@@ -426,6 +427,80 @@ class _ReefScenePainter extends CustomPainter {
     }
   }
 
+  void _paintActionCreatureBurst(Canvas canvas, Size size) {
+    final action = reef.lastAction;
+    if (action == null || burst <= 0 || burst >= 1) {
+      return;
+    }
+
+    final eased = Curves.easeOutCubic.transform(burst);
+    final fade = (1 - burst).clamp(0, 1).toDouble();
+    final centerX = reef.rippleX.clamp(0.16, 0.84) * size.width;
+    final floorY = size.height * 0.84;
+
+    canvas.saveLayer(
+      Offset.zero & size,
+      Paint()..color = Colors.white.withValues(alpha: fade),
+    );
+    canvas.translate(0, (1 - eased) * size.height * 0.04);
+
+    switch (action) {
+      case ReefAction.algae:
+        for (var index = 0; index < 5; index++) {
+          final x = centerX + (index - 2) * size.width * 0.036;
+          final base = Offset(x, floorY + (index % 2) * size.height * 0.025);
+          final height = size.height * (0.06 + index * 0.006) * eased;
+          final paint = Paint()
+            ..color = ReefColors.brightAlgae.withValues(alpha: fade * 0.86)
+            ..strokeWidth = size.shortestSide * 0.008
+            ..strokeCap = StrokeCap.round
+            ..style = PaintingStyle.stroke;
+          final path = Path()
+            ..moveTo(base.dx, base.dy)
+            ..cubicTo(
+              base.dx - size.width * 0.018,
+              base.dy - height * 0.35,
+              base.dx + size.width * 0.015,
+              base.dy - height * 0.72,
+              base.dx,
+              base.dy - height,
+            );
+          canvas.drawPath(path, paint);
+        }
+        break;
+      case ReefAction.fish:
+        for (var index = 0; index < 3; index++) {
+          final x = centerX - size.width * 0.04 + eased * size.width * 0.1;
+          final y = size.height * (0.36 + index * 0.06);
+          _drawFish(
+            canvas,
+            Offset(x + index * size.width * 0.055, y),
+            size.shortestSide * 0.03,
+            facingRight: true,
+            body: ReefColors.reefGold.withValues(alpha: fade * 0.95),
+            accent: ReefColors.softCoral.withValues(alpha: fade * 0.9),
+          );
+        }
+        break;
+      case ReefAction.crab:
+        for (var index = 0; index < 4; index++) {
+          final spread = (index - 1.5) * size.width * 0.055 * eased;
+          final step = math.sin(time * math.pi * 8 + index) * size.width * 0.01;
+          final x = centerX + spread + step;
+          final y = floorY + (index % 2) * size.height * 0.036;
+          _drawCrab(
+            canvas,
+            Offset(x, y),
+            size.shortestSide * (0.026 + eased * 0.01),
+            index + 40,
+          );
+        }
+        break;
+    }
+
+    canvas.restore();
+  }
+
   void _drawCoral(
     Canvas canvas,
     Offset base,
@@ -519,60 +594,125 @@ class _ReefScenePainter extends CustomPainter {
     final bodyPaint = Paint()..color = ReefColors.coral;
     final accentPaint = Paint()..color = ReefColors.softCoral;
     final linePaint = Paint()
-      ..color = ReefColors.coral
-      ..strokeWidth = size * 0.14
+      ..color = const Color(0xFF8E2D35)
+      ..strokeWidth = size * 0.13
       ..strokeCap = StrokeCap.round;
+    final clawPaint = Paint()..color = ReefColors.coral;
     final eyePaint = Paint()..color = ReefColors.paper;
+    final pupilPaint = Paint()..color = ReefColors.ink.withValues(alpha: 0.78);
     final step = math.sin(time * math.pi * 8 + index) * size * 0.12;
 
     canvas.drawOval(
-      Rect.fromCenter(center: center, width: size * 1.9, height: size * 1.08),
+      Rect.fromCenter(center: center, width: size * 2.05, height: size * 1.2),
       bodyPaint,
     );
-    canvas.drawOval(
+
+    canvas.drawArc(
       Rect.fromCenter(
         center: center.translate(0, -size * 0.08),
-        width: size * 1.1,
-        height: size * 0.48,
+        width: size * 1.18,
+        height: size * 0.64,
       ),
-      Paint()..color = accentPaint.color.withValues(alpha: 0.72),
+      math.pi,
+      math.pi,
+      false,
+      Paint()
+        ..color = accentPaint.color.withValues(alpha: 0.76)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = size * 0.16
+        ..strokeCap = StrokeCap.round,
     );
 
     for (final direction in [-1.0, 1.0]) {
       canvas.drawLine(
-        center.translate(direction * size * 0.48, -size * 0.05),
-        center.translate(direction * size * 1.48, -size * 0.72 + step),
+        center.translate(direction * size * 0.72, -size * 0.18),
+        center.translate(direction * size * 1.54, -size * 0.88 + step),
         linePaint,
       );
-      canvas.drawCircle(
-        center.translate(direction * size * 1.68, -size * 0.84 + step),
-        size * 0.28,
-        bodyPaint,
+      _drawCrabClaw(
+        canvas,
+        center.translate(direction * size * 1.62, -size * 0.98 + step),
+        size,
+        direction,
+        clawPaint,
       );
 
-      for (var leg = 0; leg < 3; leg++) {
-        final legY = size * (-0.08 + leg * 0.22);
+      for (var leg = 0; leg < 4; leg++) {
+        final legY = size * (-0.18 + leg * 0.22);
+        final knee = center.translate(
+          direction * size * (0.58 + leg * 0.08),
+          legY + step * (leg.isEven ? 1 : -0.6),
+        );
+        final foot = center.translate(
+          direction * size * (1.08 + leg * 0.2),
+          size * (0.2 + leg * 0.18) - step,
+        );
         canvas.drawLine(
-          center.translate(direction * size * 0.38, legY),
-          center.translate(
-            direction * size * (0.92 + leg * 0.18),
-            size * (0.2 + leg * 0.14) - step,
-          ),
+          center.translate(direction * size * 0.34, legY),
+          knee,
           linePaint,
         );
+        canvas.drawLine(knee, foot, linePaint);
       }
     }
 
+    canvas.drawLine(
+      center.translate(-size * 0.34, -size * 0.4),
+      center.translate(-size * 0.46, -size * 0.82),
+      linePaint,
+    );
+    canvas.drawLine(
+      center.translate(size * 0.34, -size * 0.4),
+      center.translate(size * 0.46, -size * 0.82),
+      linePaint,
+    );
     canvas.drawCircle(
-      center.translate(-size * 0.32, -size * 0.36),
-      size * 0.11,
+      center.translate(-size * 0.48, -size * 0.9),
+      size * 0.17,
       eyePaint,
     );
     canvas.drawCircle(
-      center.translate(size * 0.32, -size * 0.36),
-      size * 0.11,
+      center.translate(size * 0.48, -size * 0.9),
+      size * 0.17,
       eyePaint,
     );
+    canvas.drawCircle(
+      center.translate(-size * 0.43, -size * 0.9),
+      size * 0.06,
+      pupilPaint,
+    );
+    canvas.drawCircle(
+      center.translate(size * 0.53, -size * 0.9),
+      size * 0.06,
+      pupilPaint,
+    );
+  }
+
+  void _drawCrabClaw(
+    Canvas canvas,
+    Offset center,
+    double size,
+    double direction,
+    Paint paint,
+  ) {
+    canvas.save();
+    canvas.translate(center.dx, center.dy);
+    canvas.scale(direction, 1);
+
+    final upper = Path()
+      ..moveTo(-size * 0.14, size * 0.06)
+      ..quadraticBezierTo(size * 0.32, -size * 0.72, size * 0.9, -size * 0.48)
+      ..quadraticBezierTo(size * 0.74, -size * 0.06, size * 0.2, size * 0.16)
+      ..close();
+    final lower = Path()
+      ..moveTo(-size * 0.02, size * 0.14)
+      ..quadraticBezierTo(size * 0.54, size * 0.18, size * 0.82, size * 0.62)
+      ..quadraticBezierTo(size * 0.2, size * 0.7, -size * 0.2, size * 0.26)
+      ..close();
+
+    canvas.drawPath(upper, paint);
+    canvas.drawPath(lower, paint);
+    canvas.restore();
   }
 
   @override

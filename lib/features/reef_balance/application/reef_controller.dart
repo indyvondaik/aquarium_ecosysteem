@@ -53,7 +53,6 @@ class ReefController extends Notifier<ReefState> {
     _autoResetTimer?.cancel();
     state = ReefState.initial.copyWith(
       bestScore: _bestScoreAfterReset(),
-      roundNumber: _nextRoundNumber(),
       eventId: state.eventId + 1,
     );
   }
@@ -214,11 +213,7 @@ class ReefController extends Notifier<ReefState> {
     return state.bestScore > initialScore ? state.bestScore : initialScore;
   }
 
-  int _nextRoundNumber() {
-    return state.actionsTaken == 0 ? state.roundNumber : state.roundNumber + 1;
-  }
-
   void _scheduleAutoReset() {
-    _autoResetTimer = Timer(const Duration(seconds: 4), reset);
+    _autoResetTimer = Timer(const Duration(seconds: 9), reset);
   }
 }
