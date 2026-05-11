@@ -18,6 +18,7 @@ class ReefState {
     required this.rippleY,
     required this.phase,
     required this.resultVisible,
+    this.isAnimating = false,
     this.lastAction,
     this.firstAction,
   });
@@ -45,6 +46,7 @@ class ReefState {
   final double rippleY;
   final ReefRoundPhase phase;
   final bool resultVisible;
+  final bool isAnimating;
   final ReefAction? lastAction;
   final ReefAction? firstAction;
 
@@ -109,10 +111,11 @@ class ReefState {
 
   String get headline {
     return switch (phase) {
-      ReefRoundPhase.intro => 'Het rif is gezond en in balans',
-      ReefRoundPhase.reaction => 'Je hebt het ecosysteem veranderd...',
-      ReefRoundPhase.result =>
-        solvedRound ? 'Balans hersteld' : 'Het rif blijft uit balans',
+      ReefRoundPhase.intro => 'Het rif bruist van leven!',
+      ReefRoundPhase.reaction => observationTitle,
+      ReefRoundPhase.result => solvedRound
+          ? 'Topspeurder! Balans hersteld!'
+          : 'Oeps, het rif blijft uit balans...',
     };
   }
 
@@ -131,54 +134,58 @@ class ReefState {
 
   String get observationTitle {
     if (phase == ReefRoundPhase.intro) {
-      return 'Gezond rif';
+      return 'Stralend rif';
     }
 
     return switch (mood) {
-      ReefMood.algaeBloom => 'Te veel algen',
-      ReefMood.hungry => 'Te weinig algen',
-      ReefMood.overCleaned => 'Te schoon rif',
-      ReefMood.crowded => 'Te druk rif',
-      ReefMood.thriving => 'Balans terug',
-      ReefMood.balanced => 'Bijna goed',
+      ReefMood.algaeBloom => 'Algenexplosie!',
+      ReefMood.hungry => 'Honger op het rif!',
+      ReefMood.overCleaned => 'Te schoon rif!',
+      ReefMood.crowded => 'Drukte op het rif!',
+      ReefMood.thriving => 'Stralend rif!',
+      ReefMood.balanced => 'Bijna in balans!',
     };
   }
 
   String get observationDetail {
     if (phase == ReefRoundPhase.intro) {
-      return 'Algen, vissen en een paar krabben houden elkaar in evenwicht.';
+      return 'Algen, vissen en krabben werken samen. Wat een avontuur!';
     }
 
     if (phase == ReefRoundPhase.result) {
       return solvedRound
-          ? 'Het rif heeft weer genoeg voedsel zonder dat algen alles overnemen.'
+          ? 'Wat een topspeurder! Het rif danst weer in balans.'
           : incorrectReason;
     }
 
     return switch (mood) {
       ReefMood.algaeBloom =>
-        'Groen rif: de algen groeien sneller dan ze worden opgegeten.',
+        'Wow, het rif zit vol algen! Het koraal krijgt geen zonlicht meer. '
+            'Wie smult van algen?',
       ReefMood.hungry =>
-        'Er is te weinig voedsel: vissen eten sneller dan de algen terugkomen.',
+        'De algen zijn bijna op! Wie geeft de vissen nu nog te eten?',
       ReefMood.overCleaned =>
-        'Heel schoon rif: krabben ruimen zoveel op dat algen verdwijnen.',
+        'Brandschoon rif! Maar zonder algen valt er niets meer te ontdekken.',
       ReefMood.crowded =>
-        'Er is veel beweging op het rif en weinig rust voor het koraal.',
-      ReefMood.thriving => 'Alles beweegt mee: er is kleur, voedsel en ruimte.',
+        'Wat een drukte! Er zwemmen meer vissen dan er voedsel is.',
+      ReefMood.thriving =>
+        'Topboel! Kleur, voedsel en avontuur in overvloed.',
       ReefMood.balanced =>
-        'Je zit dicht bij balans, maar het rif vraagt nog een kleine correctie.',
+        'Bijna in balans! Eén kleine speurtocht en het klopt weer.',
     };
   }
 
   String get incorrectReason {
     return switch (firstAction) {
       ReefAction.algae =>
-        'Hier had je meer vissen nodig om de extra algen op te eten.',
+        'De extra algen zijn niet weggegeten. Weet je wie van algen smult? '
+            'Vissen!',
       ReefAction.fish =>
-        'Hier moest je algen toevoegen, want de vissen hebben voedsel nodig.',
+        'De vissen hebben honger. Voeg algen toe zodat ze weer kunnen smullen.',
       ReefAction.crab =>
-        'Hier moest je algen terugbrengen, want de krabben maakten het rif te schoon.',
-      null => 'Kijk goed naar het rif en probeer opnieuw.',
+        'De krabben hebben alles te schoon gemaakt. Tijd om nieuwe algen '
+            'terug te brengen!',
+      null => 'Speur het rif af en probeer opnieuw, ontdekkingsreiziger!',
     };
   }
 
@@ -216,7 +223,8 @@ class ReefState {
     return idealCorrection;
   }
 
-  bool actionEnabled(ReefAction action) => phase != ReefRoundPhase.result;
+  bool actionEnabled(ReefAction action) =>
+      phase != ReefRoundPhase.result && !isAnimating;
 
   int valueFor(ReefAction action) {
     return switch (action) {
@@ -301,6 +309,7 @@ class ReefState {
     double? rippleY,
     ReefRoundPhase? phase,
     bool? resultVisible,
+    bool? isAnimating,
     ReefAction? lastAction,
     ReefAction? firstAction,
     bool clearLastAction = false,
@@ -317,6 +326,7 @@ class ReefState {
       rippleY: rippleY ?? this.rippleY,
       phase: phase ?? this.phase,
       resultVisible: resultVisible ?? this.resultVisible,
+      isAnimating: isAnimating ?? this.isAnimating,
       lastAction: clearLastAction ? null : lastAction ?? this.lastAction,
       firstAction: clearFirstAction ? null : firstAction ?? this.firstAction,
     );
@@ -336,6 +346,7 @@ class ReefState {
             other.rippleY == rippleY &&
             other.phase == phase &&
             other.resultVisible == resultVisible &&
+            other.isAnimating == isAnimating &&
             other.lastAction == lastAction &&
             other.firstAction == firstAction;
   }
@@ -354,6 +365,7 @@ class ReefState {
       lastAction,
       phase,
       resultVisible,
+      isAnimating,
       firstAction,
     );
   }

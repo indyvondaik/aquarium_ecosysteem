@@ -12,39 +12,21 @@ class ReefActionControls extends StatelessWidget {
   const ReefActionControls({
     required this.reef,
     required this.onApply,
-    required this.onReset,
     required this.compact,
     super.key,
   });
 
   final ReefState reef;
   final ReefActionCallback onApply;
-  final VoidCallback onReset;
   final bool compact;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
       mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Align(
-          alignment: Alignment.centerRight,
-          child: Tooltip(
-            message: 'Nieuw spel',
-            child: IconButton.filled(
-              onPressed: onReset,
-              style: IconButton.styleFrom(
-                backgroundColor: ReefColors.paper.withValues(alpha: 0.94),
-                foregroundColor: ReefColors.navy,
-                side: const BorderSide(color: ReefColors.navy, width: 1.4),
-                visualDensity: VisualDensity.compact,
-              ),
-              icon: const Icon(Icons.restart_alt_rounded),
-            ),
-          ),
-        ),
-        SizedBox(height: compact ? 8 : 12),
         for (final action in ReefAction.values) ...[
           _ActionButton(
             reef: reef,
@@ -56,9 +38,32 @@ class ReefActionControls extends StatelessWidget {
             compact: compact,
           ),
           if (action != ReefAction.values.last)
-            SizedBox(height: compact ? 8 : 10),
+            SizedBox(width: compact ? 8 : 12),
         ],
       ],
+    );
+  }
+}
+
+class ReefResetButton extends StatelessWidget {
+  const ReefResetButton({required this.onReset, super.key});
+
+  final VoidCallback onReset;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: 'Nieuw spel',
+      child: IconButton.filled(
+        onPressed: onReset,
+        style: IconButton.styleFrom(
+          backgroundColor: ReefColors.paper.withValues(alpha: 0.94),
+          foregroundColor: ReefColors.navy,
+          side: const BorderSide(color: ReefColors.navy, width: 1.4),
+          visualDensity: VisualDensity.compact,
+        ),
+        icon: const Icon(Icons.restart_alt_rounded),
+      ),
     );
   }
 }
@@ -87,6 +92,8 @@ class _ActionButton extends StatelessWidget {
     final visual = _ActionVisual.from(action);
     final textColor = selected ? ReefColors.navy : ReefColors.paper;
     final iconColor = selected ? ReefColors.purple : ReefColors.paper;
+    final tileWidth = compact ? 168.0 : 220.0;
+    final tileHeight = compact ? 76.0 : 88.0;
 
     return _DelayedHintBlink(
       active: suggested && enabled && !selected,
@@ -128,93 +135,43 @@ class _ActionButton extends StatelessWidget {
                 onTap: enabled ? onTap : null,
                 borderRadius: BorderRadius.circular(18),
                 child: SizedBox(
-                  height: compact ? 84 : 92,
+                  width: tileWidth,
+                  height: tileHeight,
                   child: Padding(
-                    padding: EdgeInsets.all(compact ? 8 : 13),
-                    child: compact
-                        ? Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  _ActionIcon(
-                                    visual: visual,
-                                    color: iconColor,
-                                    selected: selected,
-                                    suggested: suggested,
-                                    hintValue: blink,
-                                    compact: true,
-                                  ),
-                                  const Spacer(),
-                                  _StateMark(
-                                    selected: selected,
-                                    suggested: suggested,
-                                    color: textColor,
-                                  ),
-                                ],
-                              ),
-                              const Spacer(),
-                              Text(
-                                action.buttonLabel.toUpperCase(),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: ReefTypography.condensed(
-                                  size: 11,
-                                  color: textColor,
-                                ),
-                              ),
-                            ],
-                          )
-                        : Row(
-                            children: [
-                              _ActionIcon(
-                                visual: visual,
-                                color: iconColor,
-                                selected: selected,
-                                suggested: suggested,
-                                hintValue: blink,
-                                compact: false,
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      action.buttonLabel.toUpperCase(),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: ReefTypography.condensed(
-                                        size: 15,
-                                        color: textColor,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      visual.subtitle,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        color: textColor.withValues(
-                                          alpha: 0.84,
-                                        ),
-                                        fontSize: 11,
-                                        height: 1.1,
-                                        fontWeight: FontWeight.w800,
-                                        letterSpacing: 0,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              _StateMark(
-                                selected: selected,
-                                suggested: suggested,
-                                color: textColor,
-                              ),
-                            ],
+                    padding: EdgeInsets.symmetric(
+                      horizontal: compact ? 10 : 14,
+                      vertical: compact ? 8 : 10,
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        _ActionIcon(
+                          visual: visual,
+                          color: iconColor,
+                          selected: selected,
+                          suggested: suggested,
+                          hintValue: blink,
+                          compact: compact,
+                        ),
+                        SizedBox(width: compact ? 10 : 12),
+                        Expanded(
+                          child: Text(
+                            action.buttonLabel.toUpperCase(),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: ReefTypography.condensed(
+                              size: compact ? 13 : 15,
+                              color: textColor,
+                            ),
                           ),
+                        ),
+                        _StateMark(
+                          selected: selected,
+                          suggested: suggested,
+                          color: textColor,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -285,7 +242,7 @@ class _DelayedHintBlinkState extends State<_DelayedHintBlink>
         ..value = 0;
     }
 
-    _delayTimer = Timer(const Duration(seconds: 2), () {
+    _delayTimer = Timer(const Duration(seconds: 6), () {
       if (!mounted || !widget.active) {
         return;
       }
@@ -409,31 +366,23 @@ class _ActionIcon extends StatelessWidget {
 }
 
 class _ActionVisual {
-  const _ActionVisual({
-    required this.type,
-    required this.subtitle,
-    required this.semanticLabel,
-  });
+  const _ActionVisual({required this.type, required this.semanticLabel});
 
   final ReefLifeIconType type;
-  final String subtitle;
   final String semanticLabel;
 
   factory _ActionVisual.from(ReefAction action) {
     return switch (action) {
       ReefAction.algae => const _ActionVisual(
         type: ReefLifeIconType.algae,
-        subtitle: 'Meer voedsel en groei',
         semanticLabel: 'Alg',
       ),
       ReefAction.fish => const _ActionVisual(
         type: ReefLifeIconType.fish,
-        subtitle: 'Eten extra algen weg',
         semanticLabel: 'Vis',
       ),
       ReefAction.crab => const _ActionVisual(
         type: ReefLifeIconType.crab,
-        subtitle: 'Ruimen de bodem op',
         semanticLabel: 'Krab',
       ),
     };

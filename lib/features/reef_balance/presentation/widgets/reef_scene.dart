@@ -28,7 +28,7 @@ class _ReefSceneState extends State<ReefScene> with TickerProviderStateMixin {
     )..repeat();
     _burstController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 820),
+      duration: const Duration(milliseconds: 3800),
     );
     _repaint = Listenable.merge([_swimController, _burstController]);
   }
@@ -291,6 +291,7 @@ class _ReefScenePainter extends CustomPainter {
       const Color(0xFFB9D86B),
     ];
 
+    final happy = _fishHappy;
     for (var index = 0; index < reef.fishCount; index++) {
       final seed = (index * 0.137) % 1;
       final speed = 0.18 + (index % 5) * 0.018;
@@ -311,9 +312,19 @@ class _ReefScenePainter extends CustomPainter {
         facingRight: facingRight,
         body: colors[index % colors.length],
         accent: colors[(index + 2) % colors.length],
+        happy: happy,
       );
     }
   }
+
+  bool get _fishHappy => switch (reef.mood) {
+    ReefMood.thriving => true,
+    ReefMood.balanced => true,
+    ReefMood.algaeBloom => false,
+    ReefMood.hungry => false,
+    ReefMood.overCleaned => false,
+    ReefMood.crowded => false,
+  };
 
   void _paintCrabs(Canvas canvas, Size size) {
     for (var index = 0; index < reef.crabCount; index++) {
@@ -382,12 +393,14 @@ class _ReefScenePainter extends CustomPainter {
   }
 
   void _paintRipple(Canvas canvas, Size size) {
-    if (burst <= 0 || burst >= 1) {
+    const rippleSpan = 0.32;
+    if (burst <= 0 || burst >= rippleSpan) {
       return;
     }
 
-    final eased = Curves.easeOutCubic.transform(burst);
-    final fade = (1 - burst).clamp(0, 1).toDouble();
+    final progress = burst / rippleSpan;
+    final eased = Curves.easeOutCubic.transform(progress);
+    final fade = (1 - progress).clamp(0, 1).toDouble();
     final center = Offset(
       reef.rippleX * size.width,
       reef.rippleY * size.height,
@@ -433,70 +446,463 @@ class _ReefScenePainter extends CustomPainter {
       return;
     }
 
-    final eased = Curves.easeOutCubic.transform(burst);
-    final fade = (1 - burst).clamp(0, 1).toDouble();
-    final centerX = reef.rippleX.clamp(0.16, 0.84) * size.width;
-    final floorY = size.height * 0.84;
-
-    canvas.saveLayer(
-      Offset.zero & size,
-      Paint()..color = Colors.white.withValues(alpha: fade),
-    );
-    canvas.translate(0, (1 - eased) * size.height * 0.04);
-
     switch (action) {
       case ReefAction.algae:
-        for (var index = 0; index < 5; index++) {
-          final x = centerX + (index - 2) * size.width * 0.036;
-          final base = Offset(x, floorY + (index % 2) * size.height * 0.025);
-          final height = size.height * (0.06 + index * 0.006) * eased;
-          final paint = Paint()
-            ..color = ReefColors.brightAlgae.withValues(alpha: fade * 0.86)
-            ..strokeWidth = size.shortestSide * 0.008
-            ..strokeCap = StrokeCap.round
-            ..style = PaintingStyle.stroke;
-          final path = Path()
-            ..moveTo(base.dx, base.dy)
-            ..cubicTo(
-              base.dx - size.width * 0.018,
-              base.dy - height * 0.35,
-              base.dx + size.width * 0.015,
-              base.dy - height * 0.72,
-              base.dx,
-              base.dy - height,
-            );
-          canvas.drawPath(path, paint);
-        }
+        _paintAlgaeBurst(canvas, size);
         break;
       case ReefAction.fish:
-        for (var index = 0; index < 3; index++) {
-          final x = centerX - size.width * 0.04 + eased * size.width * 0.1;
-          final y = size.height * (0.36 + index * 0.06);
-          _drawFish(
-            canvas,
-            Offset(x + index * size.width * 0.055, y),
-            size.shortestSide * 0.03,
-            facingRight: true,
-            body: ReefColors.reefGold.withValues(alpha: fade * 0.95),
-            accent: ReefColors.softCoral.withValues(alpha: fade * 0.9),
-          );
-        }
+        _paintFishBurst(canvas, size);
         break;
       case ReefAction.crab:
-        for (var index = 0; index < 4; index++) {
-          final spread = (index - 1.5) * size.width * 0.055 * eased;
-          final step = math.sin(time * math.pi * 8 + index) * size.width * 0.01;
-          final x = centerX + spread + step;
-          final y = floorY + (index % 2) * size.height * 0.036;
-          _drawCrab(
-            canvas,
-            Offset(x, y),
-            size.shortestSide * (0.026 + eased * 0.01),
-            index + 40,
-          );
-        }
+        _paintCrabBurst(canvas, size);
         break;
     }
+  }
+
+  void _paintAlgaeBurst(Canvas canvas, Size size) {
+    final fadeIn = (burst / 0.18).clamp(0.0, 1.0);
+    final fadeOut = ((1 - burst) / 0.18).clamp(0.0, 1.0);
+    final visibility = fadeIn * fadeOut;
+    final grow = Curves.easeOutCubic.transform(burst.clamp(0.0, 1.0));
+
+    final tintPaint = Paint()
+      ..color = ReefColors.algae.withValues(
+        alpha: 0.22 * visibility,
+      );
+    canvas.drawRect(Offset.zero & size, tintPaint);
+
+    final stalkCount = 18;
+    for (var index = 0; index < stalkCount; index++) {
+      final seed = index * 1.31;
+      final x = size.width * ((0.04 + index * 0.054) % 0.96);
+      final base = Offset(x, size.height * (0.81 + (index % 4) * 0.022));
+      final maxHeight = size.height * (0.09 + (index % 5) * 0.018);
+      final delay = (index * 0.012).clamp(0.0, 0.2);
+      final localProgress = ((burst - delay) / (1 - delay)).clamp(0.0, 1.0);
+      final stalkGrow = Curves.easeOutCubic.transform(localProgress);
+      final height = maxHeight * stalkGrow;
+      if (height <= 0) {
+        continue;
+      }
+      final wiggle =
+          math.sin(time * math.pi * 4 + seed) * size.width * 0.013;
+      final paint = Paint()
+        ..color = Color.lerp(
+          ReefColors.algae,
+          ReefColors.brightAlgae,
+          (index % 4) / 4,
+        )!.withValues(alpha: 0.78 * visibility)
+        ..strokeWidth = size.shortestSide * 0.008
+        ..strokeCap = StrokeCap.round
+        ..style = PaintingStyle.stroke;
+      final path = Path()
+        ..moveTo(base.dx, base.dy)
+        ..cubicTo(
+          base.dx - size.width * 0.02,
+          base.dy - height * 0.32,
+          base.dx + wiggle,
+          base.dy - height * 0.7,
+          base.dx + wiggle * 0.6,
+          base.dy - height,
+        );
+      canvas.drawPath(path, paint);
+    }
+
+    final particleCount = 22;
+    for (var index = 0; index < particleCount; index++) {
+      final lifetime = (burst * 1.15 + index * 0.043) % 1.0;
+      final x = size.width * ((0.06 + index * 0.044) % 0.96);
+      final y = size.height * (0.92 - lifetime * 0.78);
+      final radius = size.shortestSide * (0.005 + (index % 3) * 0.0028);
+      final alpha =
+          (1 - lifetime) * 0.7 * visibility * (0.6 + 0.4 * grow);
+      canvas.drawCircle(
+        Offset(x, y),
+        radius,
+        Paint()
+          ..color = ReefColors.brightAlgae.withValues(
+            alpha: alpha.clamp(0.0, 1.0),
+          ),
+      );
+    }
+  }
+
+  void _paintFishBurst(Canvas canvas, Size size) {
+    final fadeOut = ((1 - burst) / 0.12).clamp(0.0, 1.0);
+    final floorY = size.height * 0.81;
+    final fishColors = [
+      ReefColors.reefGold,
+      ReefColors.softCoral,
+      const Color(0xFF82D4E3),
+      const Color(0xFFFFC658),
+    ];
+
+    final targets = [
+      Offset(size.width * 0.20, floorY + size.height * 0.02),
+      Offset(size.width * 0.45, floorY),
+      Offset(size.width * 0.72, floorY + size.height * 0.02),
+      Offset(size.width * 0.90, floorY),
+    ];
+
+    for (var i = 0; i < targets.length; i++) {
+      final target = targets[i];
+      final delay = i * 0.05;
+      final localProgress = ((burst - delay) / (1 - delay)).clamp(0.0, 1.0);
+      if (localProgress <= 0) {
+        continue;
+      }
+
+      final maxAlgaeHeight = size.height * 0.13;
+      final consume = ((localProgress - 0.30) / 0.20).clamp(0.0, 1.0);
+      final algaeRemaining = 1 - consume;
+      if (algaeRemaining > 0.02) {
+        _drawSingleAlga(
+          canvas,
+          target,
+          maxAlgaeHeight * algaeRemaining,
+          fadeOut * 0.95,
+        );
+      }
+
+      final fromLeft = i.isEven;
+      final approachStart = Offset(
+        fromLeft ? -size.width * 0.05 : size.width * 1.05,
+        size.height * (0.28 + (i % 3) * 0.08),
+      );
+      final eatPos = target.translate(0, -size.height * 0.05);
+      final exitX = fromLeft ? size.width * 1.12 : -size.width * 0.12;
+      final exitOffset = Offset(
+        exitX,
+        size.height * (0.22 + (i % 3) * 0.06),
+      );
+
+      Offset fishPos;
+      bool eating = false;
+      bool facingRight;
+
+      if (localProgress < 0.30) {
+        final phase = localProgress / 0.30;
+        final eased = Curves.easeInOutCubic.transform(phase);
+        fishPos = Offset.lerp(approachStart, eatPos, eased)!;
+        facingRight = approachStart.dx < eatPos.dx;
+      } else if (localProgress < 0.55) {
+        eating = true;
+        final wiggle =
+            math.sin(time * math.pi * 18 + i) * size.width * 0.005;
+        final bob =
+            math.sin(time * math.pi * 14 + i) * size.height * 0.008;
+        fishPos = eatPos.translate(wiggle, bob);
+        facingRight = approachStart.dx < eatPos.dx;
+      } else {
+        final phase = (localProgress - 0.55) / 0.45;
+        final eased = Curves.easeInCubic.transform(phase);
+        fishPos = Offset.lerp(eatPos, exitOffset, eased)!;
+        facingRight = eatPos.dx < exitOffset.dx;
+      }
+
+      final fishSize = size.shortestSide * 0.044;
+      final body = fishColors[i % fishColors.length];
+      final accent = fishColors[(i + 1) % fishColors.length];
+
+      _drawFish(
+        canvas,
+        fishPos,
+        fishSize,
+        facingRight: facingRight,
+        body: body.withValues(alpha: fadeOut),
+        accent: accent.withValues(alpha: fadeOut * 0.92),
+        happy: true,
+      );
+
+      if (eating) {
+        final mouthSign = facingRight ? 1 : -1;
+        final mouthCenter = Offset(
+          fishPos.dx + mouthSign * fishSize * 1.0,
+          fishPos.dy + size.height * 0.005,
+        );
+        final pulse =
+            (math.sin(time * math.pi * 22 + i) * 0.5 + 0.5).toDouble();
+        canvas.drawCircle(
+          mouthCenter,
+          fishSize * (0.22 + pulse * 0.18),
+          Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = size.shortestSide * 0.0045
+            ..color = ReefColors.brightAlgae.withValues(
+              alpha: 0.6 * fadeOut,
+            ),
+        );
+
+        for (var bite = 0; bite < 4; bite++) {
+          final biteAge =
+              ((time * 4 + bite * 0.25 + i * 0.13) % 1).toDouble();
+          final biteX =
+              mouthCenter.dx - mouthSign * biteAge * size.width * 0.04;
+          final biteY = mouthCenter.dy +
+              math.sin(time * math.pi * 10 + bite + i) * size.height * 0.012;
+          canvas.drawCircle(
+            Offset(biteX, biteY),
+            (size.shortestSide * 0.005) * (1 - biteAge),
+            Paint()
+              ..color = ReefColors.brightAlgae.withValues(
+                alpha: (0.85 - biteAge) * fadeOut,
+              ),
+          );
+        }
+      }
+    }
+  }
+
+  void _paintCrabBurst(Canvas canvas, Size size) {
+    final fadeOut = ((1 - burst) / 0.12).clamp(0.0, 1.0);
+    final floorY = size.height * 0.88;
+
+    final scenes = <_CrabSceneSetup>[
+      _CrabSceneSetup(crabX: 0.23, algaeX: 0.30, side: 1.0),
+      _CrabSceneSetup(crabX: 0.55, algaeX: 0.46, side: -1.0),
+      _CrabSceneSetup(crabX: 0.78, algaeX: 0.86, side: 1.0),
+    ];
+    const snipsTotal = 4;
+
+    for (var i = 0; i < scenes.length; i++) {
+      final scene = scenes[i];
+      final restX = scene.crabX * size.width;
+      final algaeX = scene.algaeX * size.width;
+      final side = scene.side;
+
+      final delay = i * 0.06;
+      final localProgress =
+          ((burst - delay) / (1 - delay)).clamp(0.0, 1.0);
+      if (localProgress <= 0) {
+        continue;
+      }
+
+      final crabAppear = (localProgress / 0.12).clamp(0.0, 1.0);
+      final crabScale = Curves.easeOutBack.transform(crabAppear);
+      final crabSize = size.shortestSide * 0.05 * crabScale;
+
+      final cuttingPhase =
+          ((localProgress - 0.12) / 0.78).clamp(0.0, 1.0);
+      final cumulative = cuttingPhase * snipsTotal;
+      final snipsCompleted = cumulative.floor();
+      final snipFrac = cumulative - snipsCompleted;
+      final clawClosure = (1 - 2 * (snipFrac - 0.5).abs()).clamp(0.0, 1.0);
+
+      final algaeRemaining =
+          (1 - snipsCompleted / snipsTotal).clamp(0.0, 1.0);
+      final maxAlgaeHeight = size.height * 0.13;
+      final algaeHeight = maxAlgaeHeight * algaeRemaining;
+
+      if (algaeHeight > 0 && algaeRemaining > 0.02) {
+        _drawSingleAlga(
+          canvas,
+          Offset(algaeX, floorY),
+          algaeHeight,
+          fadeOut * 0.95,
+        );
+      }
+
+      if (snipsCompleted > 0 && snipFrac < 0.7 && cuttingPhase < 1.0) {
+        final pieceProgress = (snipFrac / 0.7).clamp(0.0, 1.0);
+        final pieceY = floorY - algaeHeight - 16 - pieceProgress * 32;
+        final pieceX = algaeX + side * pieceProgress * 26;
+        _drawAlgaeFragment(
+          canvas,
+          Offset(pieceX, pieceY),
+          18,
+          (1 - pieceProgress) * fadeOut * 0.9,
+          (pieceProgress - 0.5) * 0.9 * side,
+        );
+      }
+
+      final snipPosX = algaeX - side * (crabSize * 1.6);
+      final currentCrabX = restX + (snipPosX - restX) * clawClosure;
+      final crabPos = Offset(currentCrabX, floorY);
+
+      final armStart = Offset(
+        crabPos.dx + side * crabSize * 0.55,
+        crabPos.dy - crabSize * 0.6,
+      );
+      final clawCenter = Offset(
+        algaeX - side * (crabSize * 0.4 + clawClosure * crabSize * 0.1),
+        floorY - algaeHeight - 4,
+      );
+
+      if (clawClosure > 0.55 && algaeHeight > 0) {
+        final flash = (clawClosure - 0.55) / 0.45;
+        canvas.drawLine(
+          Offset(algaeX - 14, floorY - algaeHeight - 2),
+          Offset(algaeX + 14, floorY - algaeHeight + 4),
+          Paint()
+            ..color = Colors.white.withValues(
+              alpha: flash * 0.85 * fadeOut,
+            )
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 2.6
+            ..strokeCap = StrokeCap.round,
+        );
+      }
+
+      _drawCrab(canvas, crabPos, crabSize, i + 100);
+
+      final armPaint = Paint()
+        ..color = ReefColors.coral.withValues(alpha: fadeOut)
+        ..strokeWidth = crabSize * 0.28
+        ..strokeCap = StrokeCap.round;
+      final armElbow = Offset(
+        (armStart.dx + clawCenter.dx) / 2 + side * crabSize * 0.25,
+        (armStart.dy + clawCenter.dy) / 2 - crabSize * 0.35,
+      );
+      final armPath = Path()
+        ..moveTo(armStart.dx, armStart.dy)
+        ..quadraticBezierTo(
+          armElbow.dx,
+          armElbow.dy,
+          clawCenter.dx,
+          clawCenter.dy,
+        );
+      canvas.drawPath(
+        armPath,
+        Paint()
+          ..color = const Color(0xFF8E2D35).withValues(alpha: fadeOut)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = armPaint.strokeWidth + 1.5
+          ..strokeCap = StrokeCap.round,
+      );
+      canvas.drawPath(
+        armPath,
+        Paint()
+          ..color = ReefColors.coral.withValues(alpha: fadeOut)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = armPaint.strokeWidth
+          ..strokeCap = StrokeCap.round,
+      );
+
+      _drawScissorClaw(
+        canvas,
+        clawCenter,
+        crabSize * 1.0,
+        side,
+        1 - clawClosure,
+        fadeOut,
+      );
+    }
+  }
+
+  void _drawSingleAlga(
+    Canvas canvas,
+    Offset base,
+    double height,
+    double alpha,
+  ) {
+    if (height <= 0 || alpha <= 0) {
+      return;
+    }
+    final wiggle = math.sin(time * math.pi * 4 + base.dx) * 6;
+    final paint = Paint()
+      ..color = ReefColors.brightAlgae.withValues(
+        alpha: alpha.clamp(0.0, 1.0),
+      )
+      ..strokeWidth = 7
+      ..strokeCap = StrokeCap.round
+      ..style = PaintingStyle.stroke;
+    final path = Path()
+      ..moveTo(base.dx, base.dy)
+      ..cubicTo(
+        base.dx - 10,
+        base.dy - height * 0.32,
+        base.dx + wiggle,
+        base.dy - height * 0.7,
+        base.dx + wiggle * 0.6,
+        base.dy - height,
+      );
+    canvas.drawPath(path, paint);
+    canvas.drawCircle(
+      Offset(base.dx + wiggle * 0.6, base.dy - height),
+      4,
+      Paint()
+        ..color = ReefColors.brightAlgae.withValues(
+          alpha: alpha.clamp(0.0, 1.0),
+        ),
+    );
+  }
+
+  void _drawAlgaeFragment(
+    Canvas canvas,
+    Offset center,
+    double size,
+    double alpha,
+    double angle,
+  ) {
+    if (alpha <= 0) {
+      return;
+    }
+    canvas.save();
+    canvas.translate(center.dx, center.dy);
+    canvas.rotate(angle);
+    final paint = Paint()
+      ..color = ReefColors.brightAlgae.withValues(
+        alpha: alpha.clamp(0.0, 1.0),
+      )
+      ..strokeWidth = 5.5
+      ..strokeCap = StrokeCap.round;
+    canvas.drawLine(
+      Offset(-size / 2, size / 4),
+      Offset(size / 2, -size / 4),
+      paint,
+    );
+    canvas.restore();
+  }
+
+  void _drawScissorClaw(
+    Canvas canvas,
+    Offset center,
+    double size,
+    double side,
+    double openness,
+    double alpha,
+  ) {
+    if (alpha <= 0) {
+      return;
+    }
+    final fillPaint = Paint()
+      ..color = ReefColors.coral.withValues(alpha: alpha);
+    final outlinePaint = Paint()
+      ..color = const Color(0xFF8E2D35).withValues(alpha: alpha)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.4;
+
+    canvas.save();
+    canvas.translate(center.dx, center.dy);
+    canvas.scale(side, 1);
+
+    final spread = openness * size * 0.45;
+
+    final upper = Path()
+      ..moveTo(0, -spread * 0.18)
+      ..quadraticBezierTo(
+        size * 0.4,
+        -spread - size * 0.18,
+        size * 0.95,
+        -spread * 0.55,
+      )
+      ..quadraticBezierTo(size * 0.6, -spread * 0.05, 0, 0)
+      ..close();
+    canvas.drawPath(upper, fillPaint);
+    canvas.drawPath(upper, outlinePaint);
+
+    final lower = Path()
+      ..moveTo(0, spread * 0.18)
+      ..quadraticBezierTo(
+        size * 0.4,
+        spread + size * 0.18,
+        size * 0.95,
+        spread * 0.55,
+      )
+      ..quadraticBezierTo(size * 0.6, spread * 0.05, 0, 0)
+      ..close();
+    canvas.drawPath(lower, fillPaint);
+    canvas.drawPath(lower, outlinePaint);
 
     canvas.restore();
   }
@@ -535,6 +941,7 @@ class _ReefScenePainter extends CustomPainter {
     required bool facingRight,
     required Color body,
     required Color accent,
+    bool happy = true,
   }) {
     final bodyPaint = Paint()..color = body;
     final accentPaint = Paint()..color = accent.withValues(alpha: 0.92);
@@ -567,26 +974,63 @@ class _ReefScenePainter extends CustomPainter {
       ),
       finPaint,
     );
-    canvas.drawCircle(Offset(size * 0.62, -size * 0.16), size * 0.12, inkPaint);
-    canvas.drawCircle(
-      Offset(size * 0.66, -size * 0.18),
-      size * 0.04,
-      Paint()..color = Colors.white.withValues(alpha: 0.8),
-    );
-    canvas.drawArc(
-      Rect.fromCenter(
-        center: Offset(size * 0.78, size * 0.14),
-        width: size * 0.45,
-        height: size * 0.26,
-      ),
-      0,
-      math.pi,
-      false,
-      Paint()
+    if (happy) {
+      canvas.drawCircle(
+        Offset(size * 0.62, -size * 0.16),
+        size * 0.12,
+        inkPaint,
+      );
+      canvas.drawCircle(
+        Offset(size * 0.66, -size * 0.18),
+        size * 0.04,
+        Paint()..color = Colors.white.withValues(alpha: 0.8),
+      );
+      canvas.drawArc(
+        Rect.fromCenter(
+          center: Offset(size * 0.78, size * 0.14),
+          width: size * 0.45,
+          height: size * 0.26,
+        ),
+        0,
+        math.pi,
+        false,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = size * 0.06
+          ..color = ReefColors.ink.withValues(alpha: 0.42),
+      );
+    } else {
+      final eyePaint = Paint()
         ..style = PaintingStyle.stroke
-        ..strokeWidth = size * 0.06
-        ..color = ReefColors.ink.withValues(alpha: 0.42),
-    );
+        ..strokeWidth = size * 0.07
+        ..strokeCap = StrokeCap.round
+        ..color = ReefColors.ink.withValues(alpha: 0.86);
+      canvas.drawLine(
+        Offset(size * 0.55, -size * 0.22),
+        Offset(size * 0.69, -size * 0.10),
+        eyePaint,
+      );
+      canvas.drawLine(
+        Offset(size * 0.69, -size * 0.22),
+        Offset(size * 0.55, -size * 0.10),
+        eyePaint,
+      );
+      canvas.drawArc(
+        Rect.fromCenter(
+          center: Offset(size * 0.78, size * 0.27),
+          width: size * 0.45,
+          height: size * 0.26,
+        ),
+        math.pi,
+        math.pi,
+        false,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = size * 0.07
+          ..strokeCap = StrokeCap.round
+          ..color = ReefColors.ink.withValues(alpha: 0.6),
+      );
+    }
     canvas.restore();
   }
 
@@ -721,4 +1165,16 @@ class _ReefScenePainter extends CustomPainter {
         oldDelegate.time != time ||
         oldDelegate.burst != burst;
   }
+}
+
+class _CrabSceneSetup {
+  const _CrabSceneSetup({
+    required this.crabX,
+    required this.algaeX,
+    required this.side,
+  });
+
+  final double crabX;
+  final double algaeX;
+  final double side;
 }

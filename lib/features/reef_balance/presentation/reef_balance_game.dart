@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:aquarium_ecosysteem/app/theme/reef_theme.dart';
 import 'package:aquarium_ecosysteem/features/reef_balance/application/reef_controller.dart';
 import 'package:aquarium_ecosysteem/features/reef_balance/domain/reef_state.dart';
@@ -21,23 +23,14 @@ class ReefBalanceGame extends ConsumerWidget {
           final compact = constraints.maxWidth < 720;
           final edge = compact ? 10.0 : 18.0;
           final safe = MediaQuery.paddingOf(context);
-          final controlsWidth = compact
-              ? (constraints.maxWidth * 0.34).clamp(126.0, 158.0).toDouble()
-              : (constraints.maxWidth * 0.18).clamp(218.0, 260.0).toDouble();
-          final availableTitleWidth =
-              constraints.maxWidth -
-              controlsWidth -
-              safe.left -
-              safe.right -
-              edge * 3;
+          final resetWidth = compact ? 56.0 : 64.0;
           final titleWidth =
-              (availableTitleWidth > 190
-                      ? availableTitleWidth
-                      : constraints.maxWidth -
-                            safe.left -
-                            safe.right -
-                            edge * 2)
-                  .clamp(180.0, compact ? 280.0 : 500.0)
+              (constraints.maxWidth -
+                      safe.left -
+                      safe.right -
+                      resetWidth -
+                      edge * 3)
+                  .clamp(180.0, compact ? 320.0 : 540.0)
                   .toDouble();
 
           return Stack(
@@ -53,19 +46,24 @@ class ReefBalanceGame extends ConsumerWidget {
                 top: safe.top + edge,
                 left: safe.left + edge,
                 width: titleWidth,
-                child: _GameStatusOverlay(reef: reef, compact: compact),
+                child: _GameTitle(compact: compact),
+              ),
+              Positioned.fill(
+                child: _CenterMessageOverlay(compact: compact),
               ),
               Positioned(
                 top: safe.top + edge,
                 right: safe.right + edge,
-                child: SizedBox(
-                  width: controlsWidth,
-                  child: ReefActionControls(
-                    reef: reef,
-                    onApply: controller.apply,
-                    onReset: controller.reset,
-                    compact: compact,
-                  ),
+                child: ReefResetButton(onReset: controller.reset),
+              ),
+              Positioned(
+                left: safe.left + edge,
+                right: safe.right + edge,
+                bottom: safe.bottom + edge,
+                child: ReefActionControls(
+                  reef: reef,
+                  onApply: controller.apply,
+                  compact: compact,
                 ),
               ),
             ],
@@ -76,82 +74,192 @@ class ReefBalanceGame extends ConsumerWidget {
   }
 }
 
-class _GameStatusOverlay extends StatelessWidget {
-  const _GameStatusOverlay({required this.reef, required this.compact});
+class _GameTitle extends StatelessWidget {
+  const _GameTitle({required this.compact});
 
-  final ReefState reef;
   final bool compact;
 
   @override
   Widget build(BuildContext context) {
-    final titleShadow = [
-      Shadow(color: ReefColors.paper.withValues(alpha: 0.92), blurRadius: 8),
-      Shadow(
-        color: ReefColors.navy.withValues(alpha: 0.42),
-        offset: const Offset(0, 2),
-        blurRadius: 7,
-      ),
-    ];
-
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 240),
-      child: Column(
-        key: ValueKey('${reef.phase}-${reef.headline}-${reef.prompt}'),
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: Text(
-              'RIF IN BALANS',
-              style: ReefTypography.display(
-                size: compact ? 34 : 52,
-                color: ReefColors.paper,
-              ).copyWith(shadows: titleShadow),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Text(
+            'RIF IN BALANS',
+            style: ReefTypography.display(
+              size: compact ? 34 : 52,
+              color: ReefColors.paper,
             ),
           ),
-          SizedBox(height: compact ? 5 : 8),
-          Text(
-            reef.headline,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style:
-                ReefTypography.condensed(
-                  size: compact ? 15 : 20,
-                  color: ReefColors.paper,
-                ).copyWith(
-                  shadows: [
-                    Shadow(
-                      color: ReefColors.navy.withValues(alpha: 0.55),
-                      offset: const Offset(0, 2),
-                      blurRadius: 5,
-                    ),
-                  ],
-                ),
+        ),
+        SizedBox(height: compact ? 6 : 8),
+        Text(
+          'Tijd voor een rifavontuur! Algen maken voedsel, vissen smullen '
+          'ervan en krabben houden de bodem schoon.',
+          maxLines: 3,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: ReefColors.paper,
+            fontSize: compact ? 11 : 13,
+            height: 1.28,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0,
+            shadows: [
+              Shadow(
+                color: ReefColors.navy.withValues(alpha: 0.7),
+                offset: const Offset(0, 1.4),
+                blurRadius: 4,
+              ),
+            ],
           ),
-          SizedBox(height: compact ? 4 : 6),
-          Text(
-            reef.prompt,
-            maxLines: compact ? 2 : 3,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: ReefColors.paper,
-              fontSize: compact ? 11 : 14,
-              height: 1.2,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 0,
-              shadows: [
-                Shadow(
-                  color: ReefColors.navy.withValues(alpha: 0.78),
-                  offset: const Offset(0, 1.4),
-                  blurRadius: 4,
+        ),
+      ],
+    );
+  }
+}
+
+class _CenterMessageOverlay extends ConsumerStatefulWidget {
+  const _CenterMessageOverlay({required this.compact});
+
+  final bool compact;
+
+  @override
+  ConsumerState<_CenterMessageOverlay> createState() =>
+      _CenterMessageOverlayState();
+}
+
+class _CenterMessageOverlayState extends ConsumerState<_CenterMessageOverlay> {
+  static const Duration _reactionAutoHide = Duration(milliseconds: 4200);
+
+  Timer? _hideTimer;
+  bool _visible = true;
+
+  @override
+  void dispose() {
+    _hideTimer?.cancel();
+    super.dispose();
+  }
+
+  void _onAnimationFinished(ReefState reef) {
+    _hideTimer?.cancel();
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _visible = true;
+    });
+    if (reef.phase == ReefRoundPhase.reaction) {
+      _hideTimer = Timer(_reactionAutoHide, () {
+        if (!mounted) {
+          return;
+        }
+        setState(() {
+          _visible = false;
+        });
+      });
+    }
+  }
+
+  void _onResetToIntro() {
+    _hideTimer?.cancel();
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _visible = true;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    ref.listen<ReefState>(reefControllerProvider, (previous, next) {
+      if (previous == null) {
+        return;
+      }
+      if (previous.isAnimating && !next.isAnimating) {
+        _onAnimationFinished(next);
+      }
+      if (previous.phase != ReefRoundPhase.intro &&
+          next.phase == ReefRoundPhase.intro) {
+        _onResetToIntro();
+      }
+    });
+
+    final reef = ref.watch(reefControllerProvider);
+    final compact = widget.compact;
+    final showOverlay = _visible && !reef.isAnimating;
+
+    return IgnorePointer(
+      child: AnimatedOpacity(
+        opacity: showOverlay ? 1.0 : 0.0,
+        duration: const Duration(milliseconds: 320),
+        curve: Curves.easeOut,
+        child: Center(
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: compact ? 24 : 48),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text(
+                  reef.headline,
+                  textAlign: TextAlign.center,
+                  style:
+                      ReefTypography.condensed(
+                        size: compact ? 22 : 32,
+                        color: ReefColors.paper,
+                      ).copyWith(
+                        height: 1.05,
+                        shadows: [
+                          Shadow(
+                            color: ReefColors.navy.withValues(alpha: 0.85),
+                            offset: const Offset(0, 2),
+                            blurRadius: 9,
+                          ),
+                        ],
+                      ),
+                ),
+                SizedBox(height: compact ? 10 : 14),
+                Text(
+                  _subtitleFor(reef),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: ReefColors.paper,
+                    fontSize: compact ? 13 : 17,
+                    height: 1.28,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0,
+                    shadows: [
+                      Shadow(
+                        color: ReefColors.navy.withValues(alpha: 0.78),
+                        offset: const Offset(0, 1.6),
+                        blurRadius: 6,
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
           ),
-        ],
+        ),
       ),
     );
+  }
+
+  String _subtitleFor(ReefState reef) {
+    return switch (reef.phase) {
+      ReefRoundPhase.intro =>
+        'Pak je backpack en speur het rif af! Verstoor het met één keuze. '
+            'Krijg jij het rif daarna weer in balans?',
+      ReefRoundPhase.reaction =>
+        '${reef.observationDetail} Wat doe jij om het rif te redden?',
+      ReefRoundPhase.result => reef.solvedRound
+          ? 'Klaar voor een nieuw avontuur? Het volgende rif wacht op je!'
+          : '${reef.incorrectReason} Een nieuw rifavontuur staat klaar!',
+    };
   }
 }

@@ -9,12 +9,16 @@ final reefControllerProvider = NotifierProvider<ReefController, ReefState>(
 );
 
 class ReefController extends Notifier<ReefState> {
+  static const Duration _animationDuration = Duration(milliseconds: 3800);
+
   Timer? _autoResetTimer;
+  Timer? _animationTimer;
 
   @override
   ReefState build() {
     ref.onDispose(() {
       _autoResetTimer?.cancel();
+      _animationTimer?.cancel();
     });
 
     return ReefState.initial.copyWith(bestScore: ReefState.initial.healthScore);
@@ -26,6 +30,7 @@ class ReefController extends Notifier<ReefState> {
     }
 
     _autoResetTimer?.cancel();
+    _animationTimer?.cancel();
 
     final next = switch (state.phase) {
       ReefRoundPhase.intro => _applyFirstChoice(action),
@@ -33,8 +38,13 @@ class ReefController extends Notifier<ReefState> {
       ReefRoundPhase.result => state,
     };
 
-    state = _withBestScore(next);
+    state = _withBestScore(next).copyWith(isAnimating: true);
 
+    _animationTimer = Timer(_animationDuration, _finishAnimation);
+  }
+
+  void _finishAnimation() {
+    state = state.copyWith(isAnimating: false);
     if (state.isResult) {
       _scheduleAutoReset();
     }
@@ -51,6 +61,7 @@ class ReefController extends Notifier<ReefState> {
 
   void reset() {
     _autoResetTimer?.cancel();
+    _animationTimer?.cancel();
     state = ReefState.initial.copyWith(
       bestScore: _bestScoreAfterReset(),
       eventId: state.eventId + 1,
