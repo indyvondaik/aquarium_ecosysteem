@@ -13,15 +13,18 @@ class ReefActionControls extends StatelessWidget {
     required this.reef,
     required this.onApply,
     required this.compact,
+    this.phone = false,
     super.key,
   });
 
   final ReefState reef;
   final ReefActionCallback onApply;
   final bool compact;
+  final bool phone;
 
   @override
   Widget build(BuildContext context) {
+    final gap = phone ? 6.0 : (compact ? 8.0 : 12.0);
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       mainAxisSize: MainAxisSize.min,
@@ -36,9 +39,9 @@ class ReefActionControls extends StatelessWidget {
             enabled: reef.actionEnabled(action),
             onTap: () => onApply(action),
             compact: compact,
+            phone: phone,
           ),
-          if (action != ReefAction.values.last)
-            SizedBox(width: compact ? 8 : 12),
+          if (action != ReefAction.values.last) SizedBox(width: gap),
         ],
       ],
     );
@@ -77,6 +80,7 @@ class _ActionButton extends StatelessWidget {
     required this.enabled,
     required this.onTap,
     required this.compact,
+    this.phone = false,
   });
 
   final ReefState reef;
@@ -86,14 +90,15 @@ class _ActionButton extends StatelessWidget {
   final bool enabled;
   final VoidCallback onTap;
   final bool compact;
+  final bool phone;
 
   @override
   Widget build(BuildContext context) {
     final visual = _ActionVisual.from(action);
     final textColor = selected ? ReefColors.navy : ReefColors.paper;
     final iconColor = selected ? ReefColors.purple : ReefColors.paper;
-    final tileWidth = compact ? 168.0 : 220.0;
-    final tileHeight = compact ? 76.0 : 88.0;
+    final tileWidth = phone ? 100.0 : (compact ? 168.0 : 220.0);
+    final tileHeight = phone ? 84.0 : (compact ? 76.0 : 88.0);
 
     return _DelayedHintBlink(
       active: suggested && enabled && !selected,
@@ -139,39 +144,80 @@ class _ActionButton extends StatelessWidget {
                   height: tileHeight,
                   child: Padding(
                     padding: EdgeInsets.symmetric(
-                      horizontal: compact ? 10 : 14,
-                      vertical: compact ? 8 : 10,
+                      horizontal: phone ? 6 : (compact ? 10 : 14),
+                      vertical: phone ? 6 : (compact ? 8 : 10),
                     ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        _ActionIcon(
-                          visual: visual,
-                          color: iconColor,
-                          selected: selected,
-                          suggested: suggested,
-                          hintValue: blink,
-                          compact: compact,
-                        ),
-                        SizedBox(width: compact ? 10 : 12),
-                        Expanded(
-                          child: Text(
-                            action.buttonLabel.toUpperCase(),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: ReefTypography.condensed(
-                              size: compact ? 13 : 15,
-                              color: textColor,
-                            ),
+                    child: phone
+                        ? Stack(
+                            children: [
+                              Positioned(
+                                top: 0,
+                                right: 0,
+                                child: _StateMark(
+                                  selected: selected,
+                                  suggested: suggested,
+                                  color: textColor,
+                                ),
+                              ),
+                              Center(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    _ActionIcon(
+                                      visual: visual,
+                                      color: iconColor,
+                                      selected: selected,
+                                      suggested: suggested,
+                                      hintValue: blink,
+                                      compact: true,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      action.buttonLabel.toUpperCase(),
+                                      maxLines: 1,
+                                      textAlign: TextAlign.center,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: ReefTypography.condensed(
+                                        size: 11,
+                                        color: textColor,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          )
+                        : Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              _ActionIcon(
+                                visual: visual,
+                                color: iconColor,
+                                selected: selected,
+                                suggested: suggested,
+                                hintValue: blink,
+                                compact: compact,
+                              ),
+                              SizedBox(width: compact ? 10 : 12),
+                              Expanded(
+                                child: Text(
+                                  action.buttonLabel.toUpperCase(),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: ReefTypography.condensed(
+                                    size: compact ? 13 : 15,
+                                    color: textColor,
+                                  ),
+                                ),
+                              ),
+                              _StateMark(
+                                selected: selected,
+                                suggested: suggested,
+                                color: textColor,
+                              ),
+                            ],
                           ),
-                        ),
-                        _StateMark(
-                          selected: selected,
-                          suggested: suggested,
-                          color: textColor,
-                        ),
-                      ],
-                    ),
                   ),
                 ),
               ),

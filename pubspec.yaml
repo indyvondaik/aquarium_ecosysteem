@@ -1,6 +1,6 @@
 name: aquarium_ecosysteem
 description: "A new Flutter project."
-publish_to: 'none'
+publish_to: "none"
 version: 0.1.0+1
 
 environment:
@@ -19,3 +19,7 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  fonts:
+    - family: Festivo-Letters-No1
+      fonts:
+        - asset: lib/app/assets/Festivo-Letters-No1-Regular/Festivo-Letters-No1-Regular.ttf

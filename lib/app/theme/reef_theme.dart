@@ -23,8 +23,8 @@ class ReefColors {
 class ReefTypography {
   const ReefTypography._();
 
-  static const displayFamily = 'Festivo Letters NO1';
-  static const labelFamily = 'Festivo Letters NO1';
+  static const displayFamily = 'Festivo-Letters-No1';
+  static const labelFamily = 'Festivo-Letters-No1';
 
   static TextStyle display({double size = 64, Color color = ReefColors.ink}) {
     return TextStyle(
@@ -74,6 +74,7 @@ class ReefTheme {
       scaffoldBackgroundColor: ReefColors.paper,
       textTheme: const TextTheme(
         bodyMedium: TextStyle(
+          fontFamily: ReefTypography.labelFamily,
           color: ReefColors.ink,
           fontSize: 16,
           height: 1.35,

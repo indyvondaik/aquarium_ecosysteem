@@ -1,10 +1,12 @@
 import 'dart:async';
+import 'dart:ui';
 
 import 'package:aquarium_ecosysteem/app/theme/reef_theme.dart';
 import 'package:aquarium_ecosysteem/features/reef_balance/application/reef_controller.dart';
 import 'package:aquarium_ecosysteem/features/reef_balance/domain/reef_state.dart';
 import 'package:aquarium_ecosysteem/features/reef_balance/presentation/widgets/reef_action_controls.dart';
 import 'package:aquarium_ecosysteem/features/reef_balance/presentation/widgets/reef_scene_panel.dart';
+import 'package:aquarium_ecosysteem/features/reef_balance/presentation/widgets/tutorial_overlay.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -20,17 +22,18 @@ class ReefBalanceGame extends ConsumerWidget {
       backgroundColor: ReefColors.navy,
       body: LayoutBuilder(
         builder: (context, constraints) {
+          final phone = constraints.maxWidth < 480;
           final compact = constraints.maxWidth < 720;
-          final edge = compact ? 10.0 : 18.0;
+          final edge = phone ? 8.0 : (compact ? 10.0 : 18.0);
           final safe = MediaQuery.paddingOf(context);
-          final resetWidth = compact ? 56.0 : 64.0;
+          final resetWidth = phone ? 48.0 : (compact ? 56.0 : 64.0);
           final titleWidth =
               (constraints.maxWidth -
                       safe.left -
                       safe.right -
                       resetWidth -
                       edge * 3)
-                  .clamp(180.0, compact ? 320.0 : 540.0)
+                  .clamp(140.0, compact ? 320.0 : 540.0)
                   .toDouble();
 
           return Stack(
@@ -46,10 +49,10 @@ class ReefBalanceGame extends ConsumerWidget {
                 top: safe.top + edge,
                 left: safe.left + edge,
                 width: titleWidth,
-                child: _GameTitle(compact: compact),
+                child: _GameTitle(compact: compact, phone: phone),
               ),
               Positioned.fill(
-                child: _CenterMessageOverlay(compact: compact),
+                child: _CenterMessageOverlay(compact: compact, phone: phone),
               ),
               Positioned(
                 top: safe.top + edge,
@@ -64,8 +67,10 @@ class ReefBalanceGame extends ConsumerWidget {
                   reef: reef,
                   onApply: controller.apply,
                   compact: compact,
+                  phone: phone,
                 ),
               ),
+              const Positioned.fill(child: TutorialOverlay()),
             ],
           );
         },
@@ -75,12 +80,15 @@ class ReefBalanceGame extends ConsumerWidget {
 }
 
 class _GameTitle extends StatelessWidget {
-  const _GameTitle({required this.compact});
+  const _GameTitle({required this.compact, required this.phone});
 
   final bool compact;
+  final bool phone;
 
   @override
   Widget build(BuildContext context) {
+    final titleSize = phone ? 26.0 : (compact ? 34.0 : 52.0);
+    final subtitleSize = phone ? 10.0 : (compact ? 11.0 : 13.0);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -91,20 +99,20 @@ class _GameTitle extends StatelessWidget {
           child: Text(
             'RIF IN BALANS',
             style: ReefTypography.display(
-              size: compact ? 34 : 52,
+              size: titleSize,
               color: ReefColors.paper,
             ),
           ),
         ),
-        SizedBox(height: compact ? 6 : 8),
+        SizedBox(height: phone ? 4 : (compact ? 6 : 8)),
         Text(
-          'Tijd voor een rifavontuur! Algen maken voedsel, vissen smullen '
-          'ervan en krabben houden de bodem schoon.',
-          maxLines: 3,
+          'Speur het rif af en houd alles in balans!',
+          maxLines: 2,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
+            fontFamily: ReefTypography.labelFamily,
             color: ReefColors.paper,
-            fontSize: compact ? 11 : 13,
+            fontSize: subtitleSize,
             height: 1.28,
             fontWeight: FontWeight.w800,
             letterSpacing: 0,
@@ -123,9 +131,10 @@ class _GameTitle extends StatelessWidget {
 }
 
 class _CenterMessageOverlay extends ConsumerStatefulWidget {
-  const _CenterMessageOverlay({required this.compact});
+  const _CenterMessageOverlay({required this.compact, required this.phone});
 
   final bool compact;
+  final bool phone;
 
   @override
   ConsumerState<_CenterMessageOverlay> createState() =>
@@ -191,58 +200,81 @@ class _CenterMessageOverlayState extends ConsumerState<_CenterMessageOverlay> {
 
     final reef = ref.watch(reefControllerProvider);
     final compact = widget.compact;
+    final phone = widget.phone;
     final showOverlay = _visible && !reef.isAnimating;
+    final headlineSize = phone ? 20.0 : (compact ? 24.0 : 36.0);
+    final subtitleSize = phone ? 13.0 : (compact ? 15.0 : 19.0);
+    final cardMaxWidth = phone ? 320.0 : (compact ? 420.0 : 620.0);
+    final cardPaddingH = phone ? 16.0 : (compact ? 22.0 : 34.0);
+    final cardPaddingV = phone ? 14.0 : (compact ? 18.0 : 26.0);
+    final outerPaddingH = phone ? 12.0 : (compact ? 18.0 : 40.0);
+    final innerGap = phone ? 10.0 : (compact ? 12.0 : 16.0);
 
     return IgnorePointer(
       child: AnimatedOpacity(
         opacity: showOverlay ? 1.0 : 0.0,
         duration: const Duration(milliseconds: 320),
         curve: Curves.easeOut,
-        child: Center(
+        child: Align(
+          alignment: const Alignment(0, -0.12),
           child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: compact ? 24 : 48),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Text(
-                  reef.headline,
-                  textAlign: TextAlign.center,
-                  style:
-                      ReefTypography.condensed(
-                        size: compact ? 22 : 32,
-                        color: ReefColors.paper,
-                      ).copyWith(
-                        height: 1.05,
-                        shadows: [
-                          Shadow(
-                            color: ReefColors.navy.withValues(alpha: 0.85),
-                            offset: const Offset(0, 2),
-                            blurRadius: 9,
+            padding: EdgeInsets.symmetric(horizontal: outerPaddingH),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: cardMaxWidth),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(26),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                  child: Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: cardPaddingH,
+                      vertical: cardPaddingV,
+                    ),
+                    decoration: BoxDecoration(
+                      color: ReefColors.paper.withValues(alpha: 0.9),
+                      borderRadius: BorderRadius.circular(26),
+                      border: Border.all(
+                        color: ReefColors.navy.withValues(alpha: 0.32),
+                        width: 1.6,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: ReefColors.navy.withValues(alpha: 0.28),
+                          blurRadius: 24,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text(
+                          reef.headline,
+                          textAlign: TextAlign.center,
+                          style: ReefTypography.condensed(
+                            size: headlineSize,
+                            color: ReefColors.navy,
+                          ).copyWith(height: 1.1),
+                        ),
+                        SizedBox(height: innerGap),
+                        Text(
+                          _subtitleFor(reef),
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontFamily: ReefTypography.labelFamily,
+                            color: ReefColors.ink,
+                            fontSize: subtitleSize,
+                            height: 1.38,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0,
                           ),
-                        ],
-                      ),
-                ),
-                SizedBox(height: compact ? 10 : 14),
-                Text(
-                  _subtitleFor(reef),
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: ReefColors.paper,
-                    fontSize: compact ? 13 : 17,
-                    height: 1.28,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0,
-                    shadows: [
-                      Shadow(
-                        color: ReefColors.navy.withValues(alpha: 0.78),
-                        offset: const Offset(0, 1.6),
-                        blurRadius: 6,
-                      ),
-                    ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ],
+              ),
             ),
           ),
         ),
@@ -253,13 +285,12 @@ class _CenterMessageOverlayState extends ConsumerState<_CenterMessageOverlay> {
   String _subtitleFor(ReefState reef) {
     return switch (reef.phase) {
       ReefRoundPhase.intro =>
-        'Pak je backpack en speur het rif af! Verstoor het met één keuze. '
-            'Krijg jij het rif daarna weer in balans?',
+        'Pak je backpack: kies een dier en verander het rif!',
       ReefRoundPhase.reaction =>
-        '${reef.observationDetail} Wat doe jij om het rif te redden?',
+        'Welk dier redt het rif? Speur en kies!',
       ReefRoundPhase.result => reef.solvedRound
-          ? 'Klaar voor een nieuw avontuur? Het volgende rif wacht op je!'
-          : '${reef.incorrectReason} Een nieuw rifavontuur staat klaar!',
+          ? 'Topspeurder! Het rif is gered!'
+          : reef.incorrectReason,
     };
   }
 }

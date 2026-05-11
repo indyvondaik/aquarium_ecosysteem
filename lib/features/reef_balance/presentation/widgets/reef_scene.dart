@@ -157,7 +157,7 @@ class _ReefScenePainter extends CustomPainter {
 
     for (var index = 0; index < 9; index++) {
       final x = size.width * (0.05 + index * 0.12);
-      final y = size.height * (0.66 + math.sin(index * 1.7) * 0.04);
+      final y = size.height * (0.54 + math.sin(index * 1.7) * 0.04);
       final radius = size.shortestSide * (0.045 + (index % 4) * 0.008);
       canvas.drawOval(
         Rect.fromCenter(
@@ -173,22 +173,22 @@ class _ReefScenePainter extends CustomPainter {
   void _paintReefFloor(Canvas canvas, Size size) {
     final floorPaint = Paint()..color = const Color(0xFF372137);
     final floor = Path()
-      ..moveTo(0, size.height * 0.8)
+      ..moveTo(0, size.height * 0.68)
       ..cubicTo(
         size.width * 0.22,
-        size.height * 0.71,
+        size.height * 0.59,
         size.width * 0.45,
-        size.height * 0.89,
+        size.height * 0.77,
         size.width * 0.68,
-        size.height * 0.8,
+        size.height * 0.68,
       )
       ..cubicTo(
         size.width * 0.82,
-        size.height * 0.74,
+        size.height * 0.62,
         size.width * 0.92,
-        size.height * 0.83,
+        size.height * 0.71,
         size.width,
-        size.height * 0.76,
+        size.height * 0.64,
       )
       ..lineTo(size.width, size.height)
       ..lineTo(0, size.height)
@@ -198,7 +198,7 @@ class _ReefScenePainter extends CustomPainter {
     final sandPaint = Paint()..color = ReefColors.sand.withValues(alpha: 0.52);
     canvas.drawOval(
       Rect.fromCenter(
-        center: Offset(size.width * 0.48, size.height * 0.91),
+        center: Offset(size.width * 0.48, size.height * 0.79),
         width: size.width * 0.78,
         height: size.height * 0.16,
       ),
@@ -216,7 +216,7 @@ class _ReefScenePainter extends CustomPainter {
 
     for (var index = 0; index < 18; index++) {
       final x = size.width * ((0.04 + index * 0.061) % 0.96);
-      final y = size.height * (0.78 + (index % 5) * 0.034);
+      final y = size.height * (0.66 + (index % 5) * 0.034);
       final scale = size.shortestSide * (0.038 + (index % 4) * 0.006);
       _drawCoral(canvas, Offset(x, y), scale, coralColors[index % 5], index);
     }
@@ -232,7 +232,7 @@ class _ReefScenePainter extends CustomPainter {
     for (var index = start; index < end; index++) {
       final seed = index * 1.618;
       final x = size.width * ((0.035 + index * 0.047) % 0.95);
-      final baseY = size.height * (0.79 + (index % 7) * 0.027);
+      final baseY = size.height * (0.67 + (index % 7) * 0.027);
       final height = size.height * (0.075 + (reef.algae / 100) * 0.1);
       final wiggle = math.sin(time * math.pi * 2.4 + seed) * size.width * 0.014;
       final paint = Paint()
@@ -331,7 +331,7 @@ class _ReefScenePainter extends CustomPainter {
       final lane = index % 4;
       final walk = math.sin(time * math.pi * 2 + index) * size.width * 0.018;
       final x = size.width * (0.13 + index * 0.105) + walk;
-      final y = size.height * (0.86 + lane * 0.024);
+      final y = size.height * (0.74 + lane * 0.024);
       _drawCrab(canvas, Offset(x, y), size.shortestSide * 0.032, index);
     }
   }
@@ -475,7 +475,7 @@ class _ReefScenePainter extends CustomPainter {
     for (var index = 0; index < stalkCount; index++) {
       final seed = index * 1.31;
       final x = size.width * ((0.04 + index * 0.054) % 0.96);
-      final base = Offset(x, size.height * (0.81 + (index % 4) * 0.022));
+      final base = Offset(x, size.height * (0.69 + (index % 4) * 0.022));
       final maxHeight = size.height * (0.09 + (index % 5) * 0.018);
       final delay = (index * 0.012).clamp(0.0, 0.2);
       final localProgress = ((burst - delay) / (1 - delay)).clamp(0.0, 1.0);
@@ -529,7 +529,7 @@ class _ReefScenePainter extends CustomPainter {
 
   void _paintFishBurst(Canvas canvas, Size size) {
     final fadeOut = ((1 - burst) / 0.12).clamp(0.0, 1.0);
-    final floorY = size.height * 0.81;
+    final floorY = size.height * 0.69;
     final fishColors = [
       ReefColors.reefGold,
       ReefColors.softCoral,
@@ -655,7 +655,7 @@ class _ReefScenePainter extends CustomPainter {
 
   void _paintCrabBurst(Canvas canvas, Size size) {
     final fadeOut = ((1 - burst) / 0.12).clamp(0.0, 1.0);
-    final floorY = size.height * 0.88;
+    final floorY = size.height * 0.76;
 
     final scenes = <_CrabSceneSetup>[
       _CrabSceneSetup(crabX: 0.23, algaeX: 0.30, side: 1.0),

@@ -111,11 +111,9 @@ class ReefState {
 
   String get headline {
     return switch (phase) {
-      ReefRoundPhase.intro => 'Het rif bruist van leven!',
+      ReefRoundPhase.intro => 'Het rif is in balans',
       ReefRoundPhase.reaction => observationTitle,
-      ReefRoundPhase.result => solvedRound
-          ? 'Topspeurder! Balans hersteld!'
-          : 'Oeps, het rif blijft uit balans...',
+      ReefRoundPhase.result => solvedRound ? 'Gelukt!' : 'Bijna!',
     };
   }
 
@@ -177,15 +175,10 @@ class ReefState {
 
   String get incorrectReason {
     return switch (firstAction) {
-      ReefAction.algae =>
-        'De extra algen zijn niet weggegeten. Weet je wie van algen smult? '
-            'Vissen!',
-      ReefAction.fish =>
-        'De vissen hebben honger. Voeg algen toe zodat ze weer kunnen smullen.',
-      ReefAction.crab =>
-        'De krabben hebben alles te schoon gemaakt. Tijd om nieuwe algen '
-            'terug te brengen!',
-      null => 'Speur het rif af en probeer opnieuw, ontdekkingsreiziger!',
+      ReefAction.algae => 'Tip: vissen smullen van algen. Probeer ze!',
+      ReefAction.fish => 'Tip: algen geven de vissen voedsel. Speur ze op!',
+      ReefAction.crab => 'Tip: algen brengen het rif tot leven. Voeg ze toe!',
+      null => 'Speur verder en probeer opnieuw, ontdekker!',
     };
   }
 

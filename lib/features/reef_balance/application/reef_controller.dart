@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:aquarium_ecosysteem/features/reef_balance/application/tutorial_controller.dart';
 import 'package:aquarium_ecosysteem/features/reef_balance/domain/reef_action.dart';
 import 'package:aquarium_ecosysteem/features/reef_balance/domain/reef_state.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -225,6 +226,9 @@ class ReefController extends Notifier<ReefState> {
   }
 
   void _scheduleAutoReset() {
-    _autoResetTimer = Timer(const Duration(seconds: 9), reset);
+    _autoResetTimer = Timer(const Duration(seconds: 9), () {
+      reset();
+      ref.read(tutorialVisibleProvider.notifier).show();
+    });
   }
 }
