@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:ui';
 
+import 'package:aquarium_ecosysteem/app/app_screen.dart';
 import 'package:aquarium_ecosysteem/app/theme/reef_theme.dart';
 import 'package:aquarium_ecosysteem/features/reef_balance/application/reef_controller.dart';
 import 'package:aquarium_ecosysteem/features/reef_balance/domain/reef_state.dart';
@@ -27,11 +28,13 @@ class ReefBalanceGame extends ConsumerWidget {
           final edge = phone ? 8.0 : (compact ? 10.0 : 18.0);
           final safe = MediaQuery.paddingOf(context);
           final resetWidth = phone ? 48.0 : (compact ? 56.0 : 64.0);
+          // Drie knoppen rechtsboven (home + mute + reset) — reserveer ruimte.
+          final controlsWidth = resetWidth * 3 + 16;
           final titleWidth =
               (constraints.maxWidth -
                       safe.left -
                       safe.right -
-                      resetWidth -
+                      controlsWidth -
                       edge * 3)
                   .clamp(140.0, compact ? 320.0 : 540.0)
                   .toDouble();
@@ -57,7 +60,23 @@ class ReefBalanceGame extends ConsumerWidget {
               Positioned(
                 top: safe.top + edge,
                 right: safe.right + edge,
-                child: ReefResetButton(onReset: controller.reset),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ReefHomeButton(
+                      onPressed: () {
+                        controller.reset();
+                        ref
+                            .read(appScreenProvider.notifier)
+                            .goTo(AppScreen.start);
+                      },
+                    ),
+                    const SizedBox(width: 8),
+                    const ReefMuteButton(),
+                    const SizedBox(width: 8),
+                    ReefResetButton(onReset: controller.reset),
+                  ],
+                ),
               ),
               Positioned(
                 left: safe.left + edge,

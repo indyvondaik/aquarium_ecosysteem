@@ -1,10 +1,12 @@
 import 'dart:async';
 
 import 'package:aquarium_ecosysteem/app/theme/reef_theme.dart';
+import 'package:aquarium_ecosysteem/features/reef_balance/application/reef_sound_service.dart';
 import 'package:aquarium_ecosysteem/features/reef_balance/domain/reef_action.dart';
 import 'package:aquarium_ecosysteem/features/reef_balance/domain/reef_state.dart';
 import 'package:aquarium_ecosysteem/features/reef_balance/presentation/widgets/reef_life_icon.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 typedef ReefActionCallback = void Function(ReefAction action);
 
@@ -66,6 +68,53 @@ class ReefResetButton extends StatelessWidget {
           visualDensity: VisualDensity.compact,
         ),
         icon: const Icon(Icons.restart_alt_rounded),
+      ),
+    );
+  }
+}
+
+class ReefHomeButton extends StatelessWidget {
+  const ReefHomeButton({required this.onPressed, super.key});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: 'Naar startmenu',
+      child: IconButton.filled(
+        onPressed: onPressed,
+        style: IconButton.styleFrom(
+          backgroundColor: ReefColors.paper.withValues(alpha: 0.94),
+          foregroundColor: ReefColors.navy,
+          side: const BorderSide(color: ReefColors.navy, width: 1.4),
+          visualDensity: VisualDensity.compact,
+        ),
+        icon: const Icon(Icons.home_rounded),
+      ),
+    );
+  }
+}
+
+class ReefMuteButton extends ConsumerWidget {
+  const ReefMuteButton({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final muted = ref.watch(reefMutedProvider);
+    return Tooltip(
+      message: muted ? 'Geluid aan' : 'Geluid uit',
+      child: IconButton.filled(
+        onPressed: () => ref.read(reefMutedProvider.notifier).toggle(),
+        style: IconButton.styleFrom(
+          backgroundColor: ReefColors.paper.withValues(alpha: 0.94),
+          foregroundColor: ReefColors.navy,
+          side: const BorderSide(color: ReefColors.navy, width: 1.4),
+          visualDensity: VisualDensity.compact,
+        ),
+        icon: Icon(
+          muted ? Icons.volume_off_rounded : Icons.volume_up_rounded,
+        ),
       ),
     );
   }

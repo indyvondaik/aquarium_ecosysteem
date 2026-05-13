@@ -5,7 +5,9 @@
       "Bash(flutter pub *)",
       "Bash(flutter clean *)",
       "Bash(flutter build *)",
-      "PowerShell(if \\(-not \\(Test-Path .github/workflows\\)\\) { New-Item -ItemType Directory -Path .github/workflows -Force | Out-Null; Write-Host \"created\" } else { Write-Host \"exists\" })"
+      "PowerShell(if \\(-not \\(Test-Path .github/workflows\\)\\) { New-Item -ItemType Directory -Path .github/workflows -Force | Out-Null; Write-Host \"created\" } else { Write-Host \"exists\" })",
+      "Bash(git stash *)",
+      "Bash(flutter test *)"
     ]
   }
 }

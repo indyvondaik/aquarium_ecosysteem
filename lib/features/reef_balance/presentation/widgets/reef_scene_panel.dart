@@ -1,17 +1,23 @@
+import 'dart:math' as math;
+
 import 'package:aquarium_ecosysteem/app/theme/reef_theme.dart';
+import 'package:aquarium_ecosysteem/features/reef_balance/application/reef_sound_service.dart';
 import 'package:aquarium_ecosysteem/features/reef_balance/domain/reef_action.dart';
 import 'package:aquarium_ecosysteem/features/reef_balance/domain/reef_state.dart';
 import 'package:aquarium_ecosysteem/features/reef_balance/presentation/widgets/reef_scene.dart';
+import 'package:aquarium_ecosysteem/features/reef_balance/presentation/widgets/reef_scene_layout.dart';
 import 'package:aquarium_ecosysteem/features/reef_balance/presentation/widgets/reef_life_icon.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 typedef ReefSceneTapCallback = void Function(double x, double y);
 
-class ReefScenePanel extends StatelessWidget {
+class ReefScenePanel extends ConsumerStatefulWidget {
   const ReefScenePanel({
     required this.reef,
     required this.onTap,
     required this.compact,
+    this.decorative = false,
     super.key,
   });
 
@@ -19,25 +25,227 @@ class ReefScenePanel extends StatelessWidget {
   final ReefSceneTapCallback onTap;
   final bool compact;
 
+  /// Als `true`: gebruikt als achtergrond op het startscherm. Geen hit-tests,
+  /// geen population/action/result overlays — alleen het water met bubbel-tap.
+  final bool decorative;
+
+  @override
+  ConsumerState<ReefScenePanel> createState() => _ReefScenePanelState();
+}
+
+class _ReefScenePanelState extends ConsumerState<ReefScenePanel>
+    with TickerProviderStateMixin {
+  late final AnimationController _swimController;
+  late final AnimationController _burstController;
+  late final AnimationController _interactionTicker;
+  final Stopwatch _clock = Stopwatch()..start();
+
+  final List<_BubbleBurst> _bubbles = <_BubbleBurst>[];
+  final Map<int, FishDartState> _fishDarts = <int, FishDartState>{};
+  final Map<int, CrabSnipState> _crabSnips = <int, CrabSnipState>{};
+  final Map<int, AlgaeDanceState> _algaeDances = <int, AlgaeDanceState>{};
+
+  int _nextBubbleId = 0;
+  late int _lastReefEventId;
+
+  @override
+  void initState() {
+    super.initState();
+    _swimController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 18),
+    )..repeat();
+    _burstController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 3800),
+    );
+    _interactionTicker = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 1),
+    )..addListener(_onInteractionTick);
+    _lastReefEventId = widget.reef.eventId;
+  }
+
+  @override
+  void didUpdateWidget(covariant ReefScenePanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.reef.eventId != _lastReefEventId) {
+      _lastReefEventId = widget.reef.eventId;
+      _burstController.forward(from: 0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _interactionTicker
+      ..removeListener(_onInteractionTick)
+      ..dispose();
+    _swimController.dispose();
+    _burstController.dispose();
+    _clock.stop();
+    super.dispose();
+  }
+
+  void _onInteractionTick() {
+    final now = _clock.elapsed;
+    _bubbles.removeWhere((effect) => now >= effect.endsAt);
+    _fishDarts.removeWhere(
+      (_, dart) => now - dart.startedAt >= FishDartState.total,
+    );
+    _crabSnips.removeWhere(
+      (_, snip) => now - snip.startedAt >= CrabSnipState.duration,
+    );
+    _algaeDances.removeWhere(
+      (_, dance) => now - dance.startedAt >= AlgaeDanceState.duration,
+    );
+
+    final hasWork = _bubbles.isNotEmpty ||
+        _fishDarts.isNotEmpty ||
+        _crabSnips.isNotEmpty ||
+        _algaeDances.isNotEmpty;
+    if (!hasWork) {
+      _interactionTicker.stop();
+    }
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  void _ensureTicker() {
+    if (!_interactionTicker.isAnimating) {
+      _interactionTicker.repeat();
+    }
+  }
+
+  void _handleTap(Offset position, Size size) {
+    final now = _clock.elapsed;
+    final sounds = ref.read(reefSoundServiceProvider);
+
+    if (widget.decorative) {
+      _spawnBubbleBurst(position, now);
+      sounds.play(ReefSoundEffect.bubblePop);
+      _ensureTicker();
+      return;
+    }
+
+    final time = _swimController.value;
+    final layout = ReefSceneLayout.compute(
+      reef: widget.reef,
+      size: size,
+      time: time,
+    );
+    final hit = layout.hitTest(position);
+
+    switch (hit) {
+      case FishHit(:final index):
+        _startFishDart(index, layout, size, now);
+        sounds.play(ReefSoundEffect.bubblePop, volume: 0.55);
+      case CrabHit(:final index):
+        // Tweede knip op dezelfde krab? Reset zodat hij opnieuw start.
+        _crabSnips[index] = CrabSnipState(index: index, startedAt: now);
+        sounds.play(ReefSoundEffect.sandPuff, volume: 0.55);
+      case AlgaeHit(:final index):
+        _algaeDances[index] = AlgaeDanceState(index: index, startedAt: now);
+        sounds.play(ReefSoundEffect.sparkle, volume: 0.45);
+      case null:
+        _spawnBubbleBurst(position, now);
+        sounds.play(ReefSoundEffect.bubblePop);
+    }
+
+    _ensureTicker();
+
+    // Behoud de bestaande ripple ring via controller — geeft visuele feedback
+    // op exact de tap-locatie ongeacht of er iets geraakt werd.
+    widget.onTap(position.dx / size.width, position.dy / size.height);
+  }
+
+  void _startFishDart(
+    int index,
+    ReefSceneLayout layout,
+    Size size,
+    Duration now,
+  ) {
+    if (index >= layout.fish.length) {
+      return;
+    }
+    final fish = layout.fish[index];
+    // Dart in de richting weg van het centrum naar buiten beeld.
+    final cx = size.width / 2;
+    final cy = size.height / 2;
+    final awayX = fish.center.dx - cx;
+    final awayY = (fish.center.dy - cy) * 0.4 - size.height * 0.05;
+    final mag = math.sqrt(awayX * awayX + awayY * awayY);
+    final unitX = mag > 0.5 ? awayX / mag : (fish.facingRight ? 1.0 : -1.0);
+    final unitY = mag > 0.5 ? awayY / mag : -0.3;
+    final dist = size.shortestSide * 1.4;
+    final exit = Offset(
+      fish.center.dx + unitX * dist,
+      fish.center.dy + unitY * dist,
+    );
+    // Nieuwe vis komt van de natuurlijke entry-rand (gebaseerd op facingRight).
+    final entryX = fish.facingRight
+        ? -fish.size * 3
+        : size.width + fish.size * 3;
+    final entryFrom = Offset(entryX, fish.center.dy);
+
+    _fishDarts[index] = FishDartState(
+      index: index,
+      startedAt: now,
+      startPosition: fish.center,
+      startFacingRight: fish.facingRight,
+      exitTarget: exit,
+      entryFrom: entryFrom,
+    );
+  }
+
+  void _spawnBubbleBurst(Offset position, Duration now) {
+    _bubbles.add(
+      _BubbleBurst(
+        id: _nextBubbleId++,
+        position: position,
+        startedAt: now,
+        duration: const Duration(milliseconds: 1100),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final interactions = ReefSceneInteractions(
+      fishDarts: _fishDarts,
+      crabSnips: _crabSnips,
+      algaeDances: _algaeDances,
+    );
     return ColoredBox(
       color: ReefColors.deepSea,
       child: ClipRect(
         child: LayoutBuilder(
           builder: (context, constraints) {
+            final size = Size(constraints.maxWidth, constraints.maxHeight);
             return GestureDetector(
               behavior: HitTestBehavior.opaque,
-              onTapDown: (details) {
-                onTap(
-                  details.localPosition.dx / constraints.maxWidth,
-                  details.localPosition.dy / constraints.maxHeight,
-                );
-              },
+              onTapDown: (details) =>
+                  _handleTap(details.localPosition, size),
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  ReefScene(reef: reef),
+                  AnimatedBuilder(
+                    animation: Listenable.merge([
+                      _swimController,
+                      _burstController,
+                      _interactionTicker,
+                    ]),
+                    builder: (context, _) {
+                      return ReefScene(
+                        reef: widget.reef,
+                        time: _swimController.value,
+                        burst: _burstController.value,
+                        now: _clock.elapsed,
+                        interactions: interactions,
+                        showInhabitants: !widget.decorative,
+                      );
+                    },
+                  ),
                   const DecoratedBox(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
@@ -51,18 +259,35 @@ class ReefScenePanel extends StatelessWidget {
                       ),
                     ),
                   ),
-                  Positioned(
-                    top: compact ? 112 : 140,
-                    left: compact ? 10 : 18,
-                    child: _PopulationCluster(reef: reef, compact: compact),
-                  ),
-                  if (reef.lastAction != null)
-                    Positioned.fill(
-                      child: IgnorePointer(child: _ActionSplash(reef: reef)),
+                  IgnorePointer(
+                    child: CustomPaint(
+                      painter: _BubbleBurstPainter(
+                        bursts: List<_BubbleBurst>.unmodifiable(_bubbles),
+                        now: _clock.elapsed,
+                      ),
+                      size: Size.infinite,
                     ),
-                  if (reef.resultVisible)
+                  ),
+                  if (!widget.decorative)
+                    Positioned(
+                      top: widget.compact ? 112 : 140,
+                      left: widget.compact ? 10 : 18,
+                      child: _PopulationCluster(
+                        reef: widget.reef,
+                        compact: widget.compact,
+                      ),
+                    ),
+                  if (!widget.decorative && widget.reef.lastAction != null)
                     Positioned.fill(
-                      child: IgnorePointer(child: _ResultPulse(reef: reef)),
+                      child: IgnorePointer(
+                        child: _ActionSplash(reef: widget.reef),
+                      ),
+                    ),
+                  if (!widget.decorative && widget.reef.resultVisible)
+                    Positioned.fill(
+                      child: IgnorePointer(
+                        child: _ResultPulse(reef: widget.reef),
+                      ),
                     ),
                 ],
               ),
@@ -71,6 +296,92 @@ class ReefScenePanel extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _BubbleBurst {
+  _BubbleBurst({
+    required this.id,
+    required this.position,
+    required this.startedAt,
+    required this.duration,
+  });
+
+  final int id;
+  final Offset position;
+  final Duration startedAt;
+  final Duration duration;
+
+  Duration get endsAt => startedAt + duration;
+
+  double progressAt(Duration now) {
+    final elapsed = now - startedAt;
+    final ratio = elapsed.inMicroseconds / duration.inMicroseconds;
+    return ratio.clamp(0.0, 1.0);
+  }
+}
+
+class _BubbleBurstPainter extends CustomPainter {
+  const _BubbleBurstPainter({required this.bursts, required this.now});
+
+  final List<_BubbleBurst> bursts;
+  final Duration now;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    for (final burst in bursts) {
+      final progress = burst.progressAt(now);
+      if (progress >= 1.0) {
+        continue;
+      }
+      _paintBurst(canvas, size, burst, progress);
+    }
+  }
+
+  void _paintBurst(
+    Canvas canvas,
+    Size size,
+    _BubbleBurst burst,
+    double progress,
+  ) {
+    final fade = (1 - progress * 0.85).clamp(0.0, 1.0);
+    final rise = Curves.easeOutQuad.transform(progress);
+    final base = burst.position;
+    final strokePaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = math.max(1.2, size.shortestSide * 0.0025)
+      ..color = Colors.white.withValues(alpha: fade * 0.78);
+    final fillPaint = Paint()
+      ..color = ReefColors.water.withValues(alpha: fade * 0.36);
+
+    for (var i = 0; i < 6; i++) {
+      final seed = (burst.id * 0.31 + i * 0.71) % 1;
+      final sway = math.sin(progress * math.pi * 3 + i + burst.id) *
+          size.shortestSide *
+          0.018;
+      final localRise = (rise + i * 0.07).clamp(0.0, 1.0);
+      final offset = Offset(
+        base.dx + sway + (i - 2.5) * size.shortestSide * 0.012,
+        base.dy -
+            localRise * size.height * 0.22 -
+            i * size.shortestSide * 0.012,
+      );
+      final radius = size.shortestSide *
+          (0.011 + seed * 0.013) *
+          (1 - progress * 0.25);
+      canvas.drawCircle(offset, radius, fillPaint);
+      canvas.drawCircle(offset, radius, strokePaint);
+      canvas.drawCircle(
+        offset.translate(-radius * 0.35, -radius * 0.35),
+        radius * 0.28,
+        Paint()..color = Colors.white.withValues(alpha: fade * 0.85),
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _BubbleBurstPainter oldDelegate) {
+    return oldDelegate.now != now || oldDelegate.bursts != bursts;
   }
 }
 

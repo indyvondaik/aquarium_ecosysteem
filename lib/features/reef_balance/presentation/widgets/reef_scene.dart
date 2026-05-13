@@ -3,65 +3,43 @@ import 'dart:math' as math;
 import 'package:aquarium_ecosysteem/app/theme/reef_theme.dart';
 import 'package:aquarium_ecosysteem/features/reef_balance/domain/reef_action.dart';
 import 'package:aquarium_ecosysteem/features/reef_balance/domain/reef_state.dart';
+import 'package:aquarium_ecosysteem/features/reef_balance/presentation/widgets/reef_scene_layout.dart';
 import 'package:flutter/material.dart';
 
-class ReefScene extends StatefulWidget {
-  const ReefScene({required this.reef, super.key});
+class ReefScene extends StatelessWidget {
+  const ReefScene({
+    required this.reef,
+    required this.time,
+    required this.burst,
+    required this.now,
+    this.interactions = ReefSceneInteractions.empty,
+    this.showInhabitants = true,
+    super.key,
+  });
 
   final ReefState reef;
+  final double time;
+  final double burst;
+  final Duration now;
+  final ReefSceneInteractions interactions;
 
-  @override
-  State<ReefScene> createState() => _ReefSceneState();
-}
-
-class _ReefSceneState extends State<ReefScene> with TickerProviderStateMixin {
-  late final AnimationController _swimController;
-  late final AnimationController _burstController;
-  late Listenable _repaint;
-
-  @override
-  void initState() {
-    super.initState();
-    _swimController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 18),
-    )..repeat();
-    _burstController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 3800),
-    );
-    _repaint = Listenable.merge([_swimController, _burstController]);
-  }
-
-  @override
-  void didUpdateWidget(covariant ReefScene oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.reef.eventId != widget.reef.eventId) {
-      _burstController.forward(from: 0);
-    }
-  }
-
-  @override
-  void dispose() {
-    _swimController.dispose();
-    _burstController.dispose();
-    super.dispose();
-  }
+  /// Als `false` worden vissen, krabben, algen en alle mood/burst-overlays
+  /// overgeslagen — alleen water, licht, koraalbodem en achtergrond-bubbels
+  /// blijven. Gebruikt door de startscherm-achtergrond.
+  final bool showInhabitants;
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _repaint,
-      builder: (context, _) {
-        return CustomPaint(
-          painter: _ReefScenePainter(
-            reef: widget.reef,
-            time: _swimController.value,
-            burst: _burstController.value,
-          ),
-          child: const SizedBox.expand(),
-        );
-      },
+    return CustomPaint(
+      painter: _ReefScenePainter(
+        reef: reef,
+        time: time,
+        burst: burst,
+        now: now,
+        interactions: interactions,
+        showInhabitants: showInhabitants,
+      ),
+      child: const SizedBox.expand(),
     );
   }
 }
@@ -71,26 +49,38 @@ class _ReefScenePainter extends CustomPainter {
     required this.reef,
     required this.time,
     required this.burst,
+    required this.now,
+    required this.interactions,
+    required this.showInhabitants,
   });
 
   final ReefState reef;
   final double time;
   final double burst;
+  final Duration now;
+  final ReefSceneInteractions interactions;
+  final bool showInhabitants;
 
   @override
   void paint(Canvas canvas, Size size) {
     _paintWater(canvas, size);
     _paintLight(canvas, size);
     _paintFarReef(canvas, size);
-    _paintAlgae(canvas, size, backLayer: true);
-    _paintFish(canvas, size);
+    if (showInhabitants) {
+      _paintAlgae(canvas, size, backLayer: true);
+      _paintFish(canvas, size);
+    }
     _paintReefFloor(canvas, size);
-    _paintAlgae(canvas, size, backLayer: false);
-    _paintCrabs(canvas, size);
+    if (showInhabitants) {
+      _paintAlgae(canvas, size, backLayer: false);
+      _paintCrabs(canvas, size);
+    }
     _paintBubbles(canvas, size);
-    _paintMoodHaze(canvas, size);
-    _paintRipple(canvas, size);
-    _paintActionCreatureBurst(canvas, size);
+    if (showInhabitants) {
+      _paintMoodHaze(canvas, size);
+      _paintRipple(canvas, size);
+      _paintActionCreatureBurst(canvas, size);
+    }
   }
 
   void _paintWater(Canvas canvas, Size size) {
@@ -234,20 +224,37 @@ class _ReefScenePainter extends CustomPainter {
       final x = size.width * ((0.035 + index * 0.047) % 0.95);
       final baseY = size.height * (0.67 + (index % 7) * 0.027);
       final height = size.height * (0.075 + (reef.algae / 100) * 0.1);
-      final wiggle = math.sin(time * math.pi * 2.4 + seed) * size.width * 0.014;
+
+      // Dans-boost: extra amplitude + snellere swing tijdens de dans-window.
+      final dance = interactions.algaeDances[index];
+      var danceFactor = 0.0;
+      if (dance != null) {
+        final elapsed = now - dance.startedAt;
+        if (elapsed >= Duration.zero && elapsed < AlgaeDanceState.duration) {
+          final t = elapsed.inMicroseconds /
+              AlgaeDanceState.duration.inMicroseconds;
+          // Symmetrische curve: piekt rond t=0.3 en faded uit
+          danceFactor = math.sin(t * math.pi) * (1 - t * 0.4);
+        }
+      }
+
+      final swingFreq = math.pi * (2.4 + danceFactor * 5.0);
+      final baseWiggle = math.sin(time * swingFreq + seed) * size.width * 0.014;
+      final wiggle = baseWiggle * (1 + danceFactor * 4.5);
+
       final paint = Paint()
         ..color = Color.lerp(
           ReefColors.algae,
           ReefColors.brightAlgae,
-          (index % 5) / 5,
+          ((index % 5) / 5 + danceFactor * 0.3).clamp(0.0, 1.0),
         )!.withValues(alpha: alpha)
-        ..strokeWidth = strokeBase * (1 + (index % 3) * 0.35)
+        ..strokeWidth = strokeBase * (1 + (index % 3) * 0.35 + danceFactor * 0.6)
         ..strokeCap = StrokeCap.round
         ..style = PaintingStyle.stroke;
 
       final path = Path()..moveTo(x, baseY);
       path.cubicTo(
-        x - size.width * 0.035,
+        x - size.width * 0.035 + wiggle * 0.3,
         baseY - height * 0.28,
         x + wiggle,
         baseY - height * 0.62,
@@ -256,11 +263,14 @@ class _ReefScenePainter extends CustomPainter {
       );
       canvas.drawPath(path, paint);
 
-      if (!backLayer && index % 3 == 0) {
+      if (!backLayer && (index % 3 == 0 || danceFactor > 0.1)) {
         canvas.drawCircle(
           Offset(x + wiggle * 0.8, baseY - height),
-          size.shortestSide * 0.008,
-          Paint()..color = ReefColors.brightAlgae.withValues(alpha: 0.7),
+          size.shortestSide * (0.008 + danceFactor * 0.008),
+          Paint()
+            ..color = ReefColors.brightAlgae.withValues(
+              alpha: (0.7 + danceFactor * 0.3).clamp(0.0, 1.0),
+            ),
         );
       }
     }
@@ -293,25 +303,59 @@ class _ReefScenePainter extends CustomPainter {
 
     final happy = _fishHappy;
     for (var index = 0; index < reef.fishCount; index++) {
-      final seed = (index * 0.137) % 1;
-      final speed = 0.18 + (index % 5) * 0.018;
-      final facingRight = index.isOdd;
-      final swim = (time * speed + seed) % 1.18;
-      final x = facingRight
-          ? size.width * (swim - 0.09)
-          : size.width * (1.09 - swim);
-      final y =
-          size.height * (0.24 + (index % 6) * 0.068) +
-          math.sin(time * math.pi * 2 + index) * size.height * 0.018;
-      final fishSize = size.shortestSide * (0.026 + (index % 4) * 0.004);
+      final layout = FishLayout.compute(
+        index: index,
+        size: size,
+        time: time,
+      );
 
+      var drawPosition = layout.center;
+      var facingRight = layout.facingRight;
+      var opacity = 1.0;
+      var skip = false;
+
+      final dart = interactions.fishDarts[index];
+      if (dart != null) {
+        final elapsed = now - dart.startedAt;
+        if (elapsed < FishDartState.dartDuration) {
+          final t = elapsed.inMicroseconds /
+              FishDartState.dartDuration.inMicroseconds;
+          final eased = Curves.easeInCubic.transform(t.clamp(0.0, 1.0));
+          drawPosition = Offset.lerp(dart.startPosition, dart.exitTarget, eased)!;
+          facingRight = dart.startFacingRight;
+          opacity = (1 - eased * 0.25).clamp(0.0, 1.0);
+        } else if (elapsed <
+            FishDartState.dartDuration + FishDartState.gapDuration) {
+          skip = true;
+        } else if (elapsed < FishDartState.total) {
+          final entryElapsed = elapsed -
+              FishDartState.dartDuration -
+              FishDartState.gapDuration;
+          final t = entryElapsed.inMicroseconds /
+              FishDartState.entryDuration.inMicroseconds;
+          final eased = Curves.easeOutCubic.transform(t.clamp(0.0, 1.0));
+          drawPosition = Offset.lerp(dart.entryFrom, layout.center, eased)!;
+          // De nieuwe vis kijkt richting z'n normale baan
+          facingRight = layout.center.dx >= dart.entryFrom.dx;
+          opacity = (0.4 + eased * 0.6).clamp(0.0, 1.0);
+        }
+      }
+
+      if (skip) {
+        continue;
+      }
+
+      final body = colors[index % colors.length];
+      final accent = colors[(index + 2) % colors.length];
       _drawFish(
         canvas,
-        Offset(x, y),
-        fishSize,
+        drawPosition,
+        layout.size,
         facingRight: facingRight,
-        body: colors[index % colors.length],
-        accent: colors[(index + 2) % colors.length],
+        body: opacity < 1 ? body.withValues(alpha: opacity) : body,
+        accent: opacity < 1
+            ? accent.withValues(alpha: opacity * 0.92)
+            : accent.withValues(alpha: 0.92),
         happy: happy,
       );
     }
@@ -330,9 +374,98 @@ class _ReefScenePainter extends CustomPainter {
     for (var index = 0; index < reef.crabCount; index++) {
       final lane = index % 4;
       final walk = math.sin(time * math.pi * 2 + index) * size.width * 0.018;
-      final x = size.width * (0.13 + index * 0.105) + walk;
-      final y = size.height * (0.74 + lane * 0.024);
-      _drawCrab(canvas, Offset(x, y), size.shortestSide * 0.032, index);
+      final baseX = size.width * (0.13 + index * 0.105) + walk;
+      final baseY = size.height * (0.74 + lane * 0.024);
+      final crabSize = size.shortestSide * 0.032;
+
+      final snip = interactions.crabSnips[index];
+      var snipPhase = 0.0;
+      if (snip != null) {
+        final elapsed = now - snip.startedAt;
+        if (elapsed >= Duration.zero && elapsed < CrabSnipState.duration) {
+          snipPhase = (elapsed.inMicroseconds /
+                  CrabSnipState.duration.inMicroseconds)
+              .clamp(0.0, 1.0);
+        }
+      }
+
+      var center = Offset(baseX, baseY);
+      var drawSize = crabSize;
+      if (snipPhase > 0) {
+        // Lichte hop tijdens de knip: omhoog op t≈0.25, terug op t≈0.6
+        final hop = math.sin(snipPhase * math.pi) * size.height * 0.012;
+        center = center.translate(0, -hop);
+        drawSize *= 1 + math.sin(snipPhase * math.pi) * 0.08;
+      }
+
+      _drawCrab(canvas, center, drawSize, index);
+
+      if (snipPhase > 0 && snipPhase < 1) {
+        _paintCrabSnipOverlay(canvas, center, drawSize, snipPhase, index);
+      }
+    }
+  }
+
+  void _paintCrabSnipOverlay(
+    Canvas canvas,
+    Offset crabCenter,
+    double crabSize,
+    double phase,
+    int index,
+  ) {
+    // Twee korte knips: scharen openen-sluiten op phase 0.0-0.45 en 0.5-0.95.
+    double snipCloseness(double localPhase) {
+      // 0 = open, 1 = dicht
+      if (localPhase < 0 || localPhase > 1) {
+        return 0;
+      }
+      return math.sin(localPhase * math.pi);
+    }
+
+    final firstSnip = snipCloseness(phase / 0.45);
+    final secondSnip = snipCloseness((phase - 0.5) / 0.45);
+    final closeness = math.max(firstSnip, secondSnip);
+    if (closeness <= 0.05) {
+      return;
+    }
+    final fade = (1 - phase).clamp(0.0, 1.0);
+
+    for (final direction in [-1.0, 1.0]) {
+      final clawTip = crabCenter.translate(
+        direction * crabSize * 1.62,
+        -crabSize * 0.98,
+      );
+      _drawScissorClaw(
+        canvas,
+        clawTip,
+        crabSize * 1.05,
+        direction,
+        1 - closeness,
+        fade,
+      );
+
+      if (closeness > 0.55) {
+        final flashAlpha = ((closeness - 0.55) / 0.45) * fade * 0.85;
+        canvas.drawCircle(
+          clawTip,
+          crabSize * (0.45 + closeness * 0.25),
+          Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = crabSize * 0.12
+            ..color = Colors.white.withValues(alpha: flashAlpha),
+        );
+        for (var i = 0; i < 4; i++) {
+          final angle = i / 4 * math.pi * 2 + index * 0.6;
+          canvas.drawCircle(
+            clawTip.translate(
+              math.cos(angle) * crabSize * 0.7,
+              math.sin(angle) * crabSize * 0.7,
+            ),
+            crabSize * 0.12 * fade,
+            Paint()..color = ReefColors.reefGold.withValues(alpha: flashAlpha),
+          );
+        }
+      }
     }
   }
 
@@ -1163,7 +1296,10 @@ class _ReefScenePainter extends CustomPainter {
   bool shouldRepaint(covariant _ReefScenePainter oldDelegate) {
     return oldDelegate.reef != reef ||
         oldDelegate.time != time ||
-        oldDelegate.burst != burst;
+        oldDelegate.burst != burst ||
+        oldDelegate.now != now ||
+        oldDelegate.interactions != interactions ||
+        oldDelegate.showInhabitants != showInhabitants;
   }
 }
 
