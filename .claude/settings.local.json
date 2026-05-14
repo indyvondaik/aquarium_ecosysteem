@@ -7,7 +7,20 @@
       "Bash(flutter build *)",
       "PowerShell(if \\(-not \\(Test-Path .github/workflows\\)\\) { New-Item -ItemType Directory -Path .github/workflows -Force | Out-Null; Write-Host \"created\" } else { Write-Host \"exists\" })",
       "Bash(git stash *)",
-      "Bash(flutter test *)"
+      "Bash(flutter test *)",
+      "WebSearch",
+      "WebFetch(domain:freesvg.org)",
+      "Bash(command -v magick)",
+      "Bash(command -v convert)",
+      "Bash(command -v python3)",
+      "Bash(convert --version)",
+      "Bash(python -c \"from PIL import Image; print\\('PIL ok'\\)\")",
+      "Bash(command -v py)",
+      "Bash(py -c \"from PIL import Image; print\\('PIL ok'\\)\")",
+      "Bash(python3 -c \"from PIL import Image; print\\('ok'\\)\")",
+      "Bash(stat -c \"%s\" lib/app/assets/animals/aqaurium_dieren.png 2>&1 || ls -la lib/app/assets/animals/aqaurium_dieren.png)",
+      "Read(//c/Users/indyv/Documents/code/aquarium_ecosysteem/**)",
+      "Bash(python -c \"import os; print\\(repr\\(os.listdir\\('lib/app/assets/animals'\\)\\)\\)\")"
     ]
   }
 }

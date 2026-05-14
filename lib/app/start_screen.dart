@@ -95,9 +95,9 @@ class StartScreen extends ConsumerWidget {
                                 icon: Icons.menu_book_rounded,
                                 label: 'INFORMATIE',
                                 color: ReefColors.water,
-                                onTap: () {
-                                  // Komt later — gebruiker voegt scherm toe.
-                                },
+                                onTap: () => ref
+                                    .read(appScreenProvider.notifier)
+                                    .goTo(AppScreen.info),
                               ),
                               SizedBox(height: phone ? 12 : 18),
                               _MenuButton(
@@ -105,9 +105,9 @@ class StartScreen extends ConsumerWidget {
                                 icon: Icons.quiz_rounded,
                                 label: 'QUIZ',
                                 color: ReefColors.reefGold,
-                                onTap: () {
-                                  // Komt later — gebruiker voegt scherm toe.
-                                },
+                                onTap: () => ref
+                                    .read(appScreenProvider.notifier)
+                                    .goTo(AppScreen.quiz),
                               ),
                               SizedBox(height: phone ? 12 : 18),
                               _MenuButton(

@@ -2,6 +2,8 @@ import 'package:aquarium_ecosysteem/app/app_screen.dart';
 import 'package:aquarium_ecosysteem/app/game_host_screen.dart';
 import 'package:aquarium_ecosysteem/app/start_screen.dart';
 import 'package:aquarium_ecosysteem/app/theme/reef_theme.dart';
+import 'package:aquarium_ecosysteem/features/info_aquarium/presentation/info_aquarium_screen.dart';
+import 'package:aquarium_ecosysteem/features/quiz/presentation/quiz_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -25,12 +27,11 @@ class _AppShell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final screen = ref.watch(appScreenProvider);
-    // Info en Quiz schermen komen later; voorlopig sturen we ze terug naar
-    // start zodat de knoppen op het menu nu nog geen 404 opleveren.
     return switch (screen) {
       AppScreen.ecosystem => const GameHostScreen(),
-      AppScreen.start || AppScreen.info || AppScreen.quiz =>
-        const StartScreen(),
+      AppScreen.info => const InfoAquariumScreen(),
+      AppScreen.quiz => const QuizScreen(),
+      AppScreen.start => const StartScreen(),
     };
   }
 }
