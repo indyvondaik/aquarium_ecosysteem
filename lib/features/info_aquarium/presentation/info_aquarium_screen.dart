@@ -76,7 +76,7 @@ class _InfoAquariumScreenState extends ConsumerState<InfoAquariumScreen>
                 ),
               Positioned(
                 top: safe.top + edge,
-                left: safe.left + edge,
+                right: safe.right + edge,
                 child: _BackToMenuButton(
                   onPressed: () => ref
                       .read(appScreenProvider.notifier)
@@ -85,8 +85,8 @@ class _InfoAquariumScreenState extends ConsumerState<InfoAquariumScreen>
               ),
               Positioned(
                 top: safe.top + edge,
-                left: safe.left + edge + 64,
-                right: safe.right + edge,
+                left: safe.left + edge,
+                right: safe.right + edge + 64,
                 child: _ScreenHeader(phone: phone, compact: compact),
               ),
             ],

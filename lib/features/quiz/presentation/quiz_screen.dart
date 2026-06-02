@@ -588,20 +588,6 @@ class _BackRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Tooltip(
-          message: 'Terug naar menu',
-          child: IconButton.filled(
-            onPressed: onBack,
-            style: IconButton.styleFrom(
-              backgroundColor: ReefColors.paper.withValues(alpha: 0.94),
-              foregroundColor: ReefColors.navy,
-              side: const BorderSide(color: ReefColors.navy, width: 1.4),
-              visualDensity: VisualDensity.compact,
-            ),
-            icon: const Icon(Icons.arrow_back_rounded),
-          ),
-        ),
-        const SizedBox(width: 12),
         Expanded(
           child: Text(
             label,
@@ -611,6 +597,20 @@ class _BackRow extends StatelessWidget {
               size: 22,
               color: ReefColors.paper,
             ).copyWith(letterSpacing: 2),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Tooltip(
+          message: 'Naar startmenu',
+          child: IconButton.filled(
+            onPressed: onBack,
+            style: IconButton.styleFrom(
+              backgroundColor: ReefColors.paper.withValues(alpha: 0.94),
+              foregroundColor: ReefColors.navy,
+              side: const BorderSide(color: ReefColors.navy, width: 1.4),
+              visualDensity: VisualDensity.compact,
+            ),
+            icon: const Icon(Icons.home_rounded),
           ),
         ),
       ],

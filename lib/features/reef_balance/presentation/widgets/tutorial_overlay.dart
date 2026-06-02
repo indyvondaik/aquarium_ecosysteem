@@ -1,8 +1,12 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui';
 
+import 'package:aquarium_ecosysteem/app/app_screen.dart';
 import 'package:aquarium_ecosysteem/app/theme/reef_theme.dart';
+import 'package:aquarium_ecosysteem/features/reef_balance/application/reef_controller.dart';
 import 'package:aquarium_ecosysteem/features/reef_balance/application/tutorial_controller.dart';
+import 'package:aquarium_ecosysteem/features/reef_balance/presentation/widgets/reef_action_controls.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -97,9 +101,7 @@ class TutorialOverlay extends ConsumerWidget {
                               child: TutorialAnimation(phone: phone),
                             ),
                             SizedBox(height: phone ? 12 : (compact ? 16 : 22)),
-                            _TutorialButton(
-                              label: 'START',
-                              primary: true,
+                            _DelayedStartButton(
                               compact: compact,
                               onPressed: () => ref
                                   .read(tutorialVisibleProvider.notifier)
@@ -111,6 +113,21 @@ class TutorialOverlay extends ConsumerWidget {
                     ),
                   ),
                 ),
+              ),
+            ),
+            Positioned(
+              top: MediaQuery.paddingOf(context).top +
+                  (phone ? 8.0 : (compact ? 10.0 : 18.0)),
+              right: MediaQuery.paddingOf(context).right +
+                  (phone ? 8.0 : (compact ? 10.0 : 18.0)),
+              child: ReefHomeButton(
+                onPressed: () {
+                  ref.read(reefControllerProvider.notifier).reset();
+                  ref.read(tutorialVisibleProvider.notifier).show();
+                  ref
+                      .read(appScreenProvider.notifier)
+                      .goTo(AppScreen.start);
+                },
               ),
             ),
           ],
@@ -126,6 +143,7 @@ class _TutorialButton extends StatelessWidget {
     required this.primary,
     required this.compact,
     required this.onPressed,
+    super.key,
   });
 
   final String label;
@@ -168,6 +186,75 @@ class _TutorialButton extends StatelessWidget {
   }
 }
 
+/// Toont de START-knop pas na een korte wachttijd, zodat kinderen
+/// eerst even naar de uitleg kijken en er niet meteen op drukken.
+class _DelayedStartButton extends StatefulWidget {
+  const _DelayedStartButton({
+    required this.compact,
+    required this.onPressed,
+  });
+
+  final bool compact;
+  final VoidCallback onPressed;
+
+  @override
+  State<_DelayedStartButton> createState() => _DelayedStartButtonState();
+}
+
+class _DelayedStartButtonState extends State<_DelayedStartButton> {
+  static const _delay = Duration(seconds: 3);
+  Timer? _timer;
+  bool _ready = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer(_delay, () {
+      if (mounted) {
+        setState(() => _ready = true);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 400),
+      child: _ready
+          ? _TutorialButton(
+              key: const ValueKey('start'),
+              label: 'START',
+              primary: true,
+              compact: widget.compact,
+              onPressed: widget.onPressed,
+            )
+          : Padding(
+              key: const ValueKey('wait'),
+              padding: EdgeInsets.symmetric(
+                horizontal: widget.compact ? 20 : 28,
+                vertical: widget.compact ? 12 : 16,
+              ),
+              child: Text(
+                'Bekijk eerst de uitleg…',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: ReefTypography.labelFamily,
+                  color: ReefColors.ink.withValues(alpha: 0.6),
+                  fontSize: widget.compact ? 13 : 15,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+    );
+  }
+}
+
 enum TutorialStage { welcome, algae, fish, crab, goal, success }
 
 class _StageInfo {
@@ -185,33 +272,33 @@ class _StageInfo {
 const List<_StageInfo> _stages = [
   _StageInfo(
     stage: TutorialStage.welcome,
-    durationMs: 4000,
+    durationMs: 6500,
     caption: 'Welkom op je rifavontuur! Speur mee tussen algen, vissen '
         'en krabben.',
   ),
   _StageInfo(
     stage: TutorialStage.algae,
-    durationMs: 6000,
+    durationMs: 7500,
     caption: 'Algen maken voedsel en zuurstof. Belangrijk voor het rif!',
   ),
   _StageInfo(
     stage: TutorialStage.fish,
-    durationMs: 6500,
-    caption: 'Vissen smullen algen op en geven mest aan het rif.',
+    durationMs: 7500,
+    caption: 'Vissen eten algen op en geven mest aan het rif.',
   ),
   _StageInfo(
     stage: TutorialStage.crab,
-    durationMs: 6500,
+    durationMs: 7500,
     caption: 'Krabben knippen algen weg en ruimen de bodem op.',
   ),
   _StageInfo(
     stage: TutorialStage.goal,
-    durationMs: 5500,
-    caption: 'Pak je backpack: verstoor het rif en breng het in balans!',
+    durationMs: 9500,
+    caption: 'Jouw missie: verstoor het rif en breng het in balans!',
   ),
   _StageInfo(
     stage: TutorialStage.success,
-    durationMs: 4500,
+    durationMs: 5000,
     caption: 'Klaar voor je avontuur? Klik op START!',
   ),
 ];

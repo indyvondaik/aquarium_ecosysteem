@@ -56,6 +56,10 @@ class InfoCreature {
     required this.tagline,
     required this.description,
     required this.funFacts,
+    this.photoAsset,
+    this.photoAlignment = Alignment.center,
+    this.photoFit = BoxFit.cover,
+    this.videoAsset,
   });
 
   /// Unieke key — gebruikt voor hero-animaties en list-keys.
@@ -88,4 +92,21 @@ class InfoCreature {
 
   /// Korte feitjes als bullet-list.
   final List<String> funFacts;
+
+  /// Optioneel pad naar een echte foto (in `dier_fotos_hd/`). Als dit is
+  /// ingevuld toont het detail-scherm de foto in plaats van de illustratie.
+  final String? photoAsset;
+
+  /// Uitsnede-uitlijning voor [photoAsset] bij `BoxFit.cover`. Standaard
+  /// gecentreerd; verschuif (bijv. naar onderen) om een dier dat niet
+  /// gecentreerd staat toch volledig in beeld te houden.
+  final Alignment photoAlignment;
+
+  /// Hoe [photoAsset] in de kaart past. `cover` vult de container (standaard);
+  /// `contain` toont het hele dier (uitgezoomd) met achtergrond eromheen.
+  final BoxFit photoFit;
+
+  /// Optioneel pad naar een video over dit dier of koraal. Zolang dit leeg
+  /// is toont het detail-scherm een gereserveerde video-plek (placeholder).
+  final String? videoAsset;
 }

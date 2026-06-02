@@ -47,4 +47,47 @@ const List<QuizQuestion> quizCatalog = [
         'hartje, soms een bolletje. Als het water rustig is, strekt hij al '
         'zijn kleine poliepjes uit om plankton uit het water te vangen.',
   ),
+  QuizQuestion(
+    id: 'seahorse_fin',
+    dutchName: 'Zeepaardje',
+    scientificName: 'Hippocampus reidi',
+    wrongImagePath: 'lib/app/assets/quiz_fotos/Zeepaardje_fout.png',
+    correctImagePath: 'lib/app/assets/quiz_fotos/IMG_1447.JPG',
+    imageAspectRatio: 3 / 2,
+    question: 'Het zeepaardje mist iets heel belangrijks. Wat mist het '
+        'zeepaardje?',
+    questionTip: 'Tip: kijk in het aquarium en vind hem!',
+    answers: [
+      'Een derde oog',
+      'Vin op zijn rug',
+      '2 poten',
+    ],
+    correctIndex: 1,
+    correctTitle: 'Goed gedaan!',
+    correctExplanation:
+        'Het zeepaardje heeft een waaiervormige vin op zijn rug. Die wappert '
+        'wel dertig keer per seconde en daarmee zwemt hij rechtop door het '
+        'water. Zonder zijn rugvin zou het zeepaardje geen kant op kunnen!',
+  ),
+  QuizQuestion(
+    id: 'copperband_dot',
+    dutchName: 'Pincetvis',
+    scientificName: 'Chelmon rostratus',
+    wrongImagePath: 'lib/app/assets/quiz_fotos/Pincetvis_fout.png',
+    correctImagePath: 'lib/app/assets/quiz_fotos/IMG_1251.JPG',
+    imageAspectRatio: 3 / 2,
+    question: 'Er klopt hier iets niet aan de foto. Wat mist er hier?',
+    questionTip: 'Tip: kijk in het aquarium en vind hem!',
+    answers: [
+      'Groene bek',
+      'Zwarte stip',
+      'Roze staart',
+    ],
+    correctIndex: 1,
+    correctTitle: 'Goed gedaan!',
+    correctExplanation:
+        'De pincetvis heeft een zwarte stip op zijn rugvin die op een nep-oog '
+        'lijkt. Roofvissen happen zo naar de verkeerde kant, terwijl zijn '
+        'echte ogen veilig achter een donkere streep verstopt zitten. Slim!',
+  ),
 ];

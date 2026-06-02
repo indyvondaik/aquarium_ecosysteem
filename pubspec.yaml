@@ -25,6 +25,7 @@ flutter:
     - lib/app/assets/animals/
     - lib/app/assets/animals/aqaurium_dieren.png
     - lib/app/assets/quiz_fotos/
+    - lib/app/assets/dier_fotos_hd/
   fonts:
     - family: Festivo-Letters-No1
       fonts:

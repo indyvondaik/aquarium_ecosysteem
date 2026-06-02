@@ -20,7 +20,7 @@ extension ReefActionCopy on ReefAction {
   String get ecosystemRole {
     return switch (this) {
       ReefAction.algae => 'maken zuurstof en voedsel',
-      ReefAction.fish => 'grazen algen weg',
+      ReefAction.fish => 'eten algen op',
       ReefAction.crab => 'ruimen de bodem op',
     };
   }

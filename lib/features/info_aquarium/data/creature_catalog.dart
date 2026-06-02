@@ -30,6 +30,10 @@ const List<InfoCreature> creatureCatalog = [
       'Eet kleine garnaaltjes door ze met zijn snuit op te zuigen.',
       'Trouw aan één partner gedurende het hele jaar.',
     ],
+    photoAsset: 'lib/app/assets/dier_fotos_hd/IMG_1319.JPG',
+    // Vult de container (cover) met een uitsnede die zoveel mogelijk van het
+    // lichaam toont — kop én het grootste deel van de staart.
+    photoAlignment: Alignment(0, 0.4),
   ),
 
   // --- Bovenste waterlaag: vissen aan de zijkanten ---
@@ -58,6 +62,7 @@ const List<InfoCreature> creatureCatalog = [
       'Helpt het rif door overtollige algen weg te eten.',
       'Bij stress kleurt zijn lichaam tijdelijk donkerder.',
     ],
+    photoAsset: 'lib/app/assets/dier_fotos_hd/IMG_1262.JPG',
   ),
   InfoCreature(
     id: 'copperband',
@@ -84,6 +89,9 @@ const List<InfoCreature> creatureCatalog = [
       'Aaseter van glasanemonen — handig in een aquarium.',
       'Zwemt vaak in paren langs het rif.',
     ],
+    photoAsset: 'lib/app/assets/dier_fotos_hd/IMG_1251.JPG',
+    // Verder naar onderen uitgesneden zodat er niets onderaan wordt afgesneden.
+    photoAlignment: Alignment(0, 0.6),
   ),
   InfoCreature(
     id: 'yellow_wrasse',
@@ -110,6 +118,7 @@ const List<InfoCreature> creatureCatalog = [
       'Geboren als vrouwtje — sommige worden later mannetje.',
       'Eet parasieten van andere vissen.',
     ],
+    photoAsset: 'lib/app/assets/dier_fotos_hd/IMG_1295.JPG',
   ),
 
   // --- Onderste laag: koralen en bodembewoners ---

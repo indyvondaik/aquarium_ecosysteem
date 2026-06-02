@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'package:aquarium_ecosysteem/app/app_screen.dart';
 import 'package:aquarium_ecosysteem/app/theme/reef_theme.dart';
 import 'package:aquarium_ecosysteem/features/reef_balance/application/reef_controller.dart';
+import 'package:aquarium_ecosysteem/features/reef_balance/application/tutorial_controller.dart';
 import 'package:aquarium_ecosysteem/features/reef_balance/domain/reef_state.dart';
 import 'package:aquarium_ecosysteem/features/reef_balance/presentation/widgets/reef_action_controls.dart';
 import 'package:aquarium_ecosysteem/features/reef_balance/presentation/widgets/reef_scene_panel.dart';
@@ -63,18 +64,19 @@ class ReefBalanceGame extends ConsumerWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    const ReefMuteButton(),
+                    const SizedBox(width: 8),
+                    ReefResetButton(onReset: controller.reset),
+                    const SizedBox(width: 8),
                     ReefHomeButton(
                       onPressed: () {
                         controller.reset();
+                        ref.read(tutorialVisibleProvider.notifier).show();
                         ref
                             .read(appScreenProvider.notifier)
                             .goTo(AppScreen.start);
                       },
                     ),
-                    const SizedBox(width: 8),
-                    const ReefMuteButton(),
-                    const SizedBox(width: 8),
-                    ReefResetButton(onReset: controller.reset),
                   ],
                 ),
               ),
@@ -289,6 +291,43 @@ class _CenterMessageOverlayState extends ConsumerState<_CenterMessageOverlay> {
                             letterSpacing: 0,
                           ),
                         ),
+                        if (reef.phase == ReefRoundPhase.result) ...[
+                          SizedBox(height: innerGap),
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: phone ? 12 : 16,
+                              vertical: phone ? 7 : 9,
+                            ),
+                            decoration: BoxDecoration(
+                              color: ReefColors.navy.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.autorenew_rounded,
+                                  size: subtitleSize + 2,
+                                  color: ReefColors.navy,
+                                ),
+                                SizedBox(width: phone ? 6 : 8),
+                                Flexible(
+                                  child: Text(
+                                    reef.autoResetLabel,
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontFamily: ReefTypography.labelFamily,
+                                      color: ReefColors.navy,
+                                      fontSize: subtitleSize - 2,
+                                      height: 1.25,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -304,7 +343,7 @@ class _CenterMessageOverlayState extends ConsumerState<_CenterMessageOverlay> {
   String _subtitleFor(ReefState reef) {
     return switch (reef.phase) {
       ReefRoundPhase.intro =>
-        'Pak je backpack: kies een dier en verander het rif!',
+        'Jouw missie: kies een dier en verander het rif!',
       ReefRoundPhase.reaction =>
         'Welk dier redt het rif? Speur en kies!',
       ReefRoundPhase.result => reef.solvedRound

@@ -57,6 +57,7 @@ class _CreatureDetailScreenState extends State<CreatureDetailScreen>
               phone: phone,
               compact: compact,
             );
+            final video = _VideoSlot(creature: creature, accent: accent);
 
             return Padding(
               padding: EdgeInsets.symmetric(
@@ -105,19 +106,38 @@ class _CreatureDetailScreenState extends State<CreatureDetailScreen>
                         ? Row(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              Expanded(flex: 4, child: illustration),
+                              Expanded(
+                                flex: 5,
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    Expanded(flex: 3, child: illustration),
+                                    const SizedBox(height: 14),
+                                    Expanded(flex: 2, child: video),
+                                  ],
+                                ),
+                              ),
                               const SizedBox(width: 24),
-                              Expanded(flex: 5, child: info),
+                              Expanded(flex: 6, child: info),
                             ],
                           )
                         : Column(
                             children: [
-                              SizedBox(
-                                height: phone ? 200 : 260,
-                                child: illustration,
+                              Expanded(
+                                flex: 5,
+                                child: Row(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    Expanded(child: illustration),
+                                    const SizedBox(width: 12),
+                                    Expanded(child: video),
+                                  ],
+                                ),
                               ),
-                              const SizedBox(height: 16),
-                              Expanded(child: info),
+                              const SizedBox(height: 14),
+                              Expanded(flex: 6, child: info),
                             ],
                           ),
                   ),
@@ -172,18 +192,28 @@ class _IllustrationCard extends StatelessWidget {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(22),
-        child: Padding(
-          padding: EdgeInsets.all(compact ? 18 : 28),
-          child: AnimatedBuilder(
-            animation: ambient,
-            builder: (context, _) {
-              return CreatureArtwork(
-                creature: creature,
-                time: ambient.value,
-              );
-            },
-          ),
-        ),
+        child: creature.photoAsset != null
+            // Echte foto: cover vult de hele container; het dier staat
+            // gecentreerd in beeld zodat het goed zichtbaar blijft.
+            ? Image.asset(
+                creature.photoAsset!,
+                fit: creature.photoFit,
+                alignment: creature.photoAlignment,
+                width: double.infinity,
+                height: double.infinity,
+              )
+            : Padding(
+                padding: EdgeInsets.all(compact ? 18 : 28),
+                child: AnimatedBuilder(
+                  animation: ambient,
+                  builder: (context, _) {
+                    return CreatureArtwork(
+                      creature: creature,
+                      time: ambient.value,
+                    );
+                  },
+                ),
+              ),
       ),
     );
   }
@@ -225,113 +255,204 @@ class _InfoColumn extends StatelessWidget {
           ),
         ],
       ),
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerLeft,
-              child: Text(
-                creature.dutchName.toUpperCase(),
-                style: ReefTypography.display(
-                  size: titleSize,
-                  color: ReefColors.navy,
-                ),
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              creature.scientificName,
-              style: TextStyle(
-                fontFamily: ReefTypography.labelFamily,
-                fontStyle: FontStyle.italic,
-                color: ReefColors.purple,
-                fontSize: phone ? 14.0 : (compact ? 18.0 : 21.0),
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.4,
-              ),
-            ),
-            const SizedBox(height: 14),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: accent.withValues(alpha: 0.22),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: ReefColors.navy.withValues(alpha: 0.4),
-                  width: 1,
-                ),
-              ),
-              child: Text(
-                creature.tagline,
-                style: TextStyle(
-                  fontFamily: ReefTypography.labelFamily,
-                  color: ReefColors.ink,
-                  fontSize: taglineSize,
-                  fontWeight: FontWeight.w800,
-                  height: 1.3,
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              creature.description,
-              style: TextStyle(
-                fontFamily: ReefTypography.labelFamily,
-                color: ReefColors.ink,
-                fontSize: bodySize,
-                height: 1.45,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 18),
-            Text(
-              'WIST JE DAT?',
-              style: ReefTypography.condensed(
-                size: phone ? 14 : (compact ? 17 : 20),
-                color: ReefColors.navy,
-              ).copyWith(letterSpacing: 1.4),
-            ),
-            const SizedBox(height: 8),
-            for (final fact in creature.funFacts) ...[
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(top: 6, right: 10),
-                      child: Container(
-                        width: 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: accent,
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: ReefColors.navy,
-                            width: 1.2,
-                          ),
-                        ),
+      // Geen scroll: schaal de inhoud zo nodig omlaag zodat alles altijd
+      // binnen de beschikbare hoogte past.
+      child: LayoutBuilder(
+        builder: (context, c) {
+          return FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.topLeft,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: c.maxWidth),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      creature.dutchName.toUpperCase(),
+                      style: ReefTypography.display(
+                        size: titleSize,
+                        color: ReefColors.navy,
                       ),
                     ),
-                    Expanded(
-                      child: Text(
-                        fact,
-                        style: TextStyle(
-                          fontFamily: ReefTypography.labelFamily,
-                          color: ReefColors.ink,
-                          fontSize: bodySize,
-                          height: 1.4,
-                          fontWeight: FontWeight.w700,
-                        ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    creature.scientificName,
+                    style: TextStyle(
+                      fontFamily: ReefTypography.labelFamily,
+                      fontStyle: FontStyle.italic,
+                      color: ReefColors.purple,
+                      fontSize: phone ? 14.0 : (compact ? 18.0 : 21.0),
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.4,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: accent.withValues(alpha: 0.22),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: ReefColors.navy.withValues(alpha: 0.4),
+                        width: 1,
+                      ),
+                    ),
+                    child: Text(
+                      creature.tagline,
+                      style: TextStyle(
+                        fontFamily: ReefTypography.labelFamily,
+                        color: ReefColors.ink,
+                        fontSize: taglineSize,
+                        fontWeight: FontWeight.w800,
+                        height: 1.3,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    creature.description,
+                    style: TextStyle(
+                      fontFamily: ReefTypography.labelFamily,
+                      color: ReefColors.ink,
+                      fontSize: bodySize,
+                      height: 1.45,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  Text(
+                    'WIST JE DAT?',
+                    style: ReefTypography.condensed(
+                      size: phone ? 14 : (compact ? 17 : 20),
+                      color: ReefColors.navy,
+                    ).copyWith(letterSpacing: 1.4),
+                  ),
+                  const SizedBox(height: 8),
+                  for (final fact in creature.funFacts) ...[
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(top: 6, right: 10),
+                            child: Container(
+                              width: 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                color: accent,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: ReefColors.navy,
+                                  width: 1.2,
+                                ),
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: Text(
+                              fact,
+                              style: TextStyle(
+                                fontFamily: ReefTypography.labelFamily,
+                                color: ReefColors.ink,
+                                fontSize: bodySize,
+                                height: 1.4,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// Gereserveerde plek voor een video over het dier of koraal. Toont een
+/// placeholder zolang [InfoCreature.videoAsset] nog leeg is.
+class _VideoSlot extends StatelessWidget {
+  const _VideoSlot({required this.creature, required this.accent});
+
+  final InfoCreature creature;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(18),
+      child: SizedBox.expand(
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFF0F4A73),
+                Color(0xFF1C355E),
+                Color(0xFF4A253A),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: accent.withValues(alpha: 0.5),
+              width: 2,
+            ),
+          ),
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(8),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 60,
+                  height: 60,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: ReefColors.paper.withValues(alpha: 0.92),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: ReefColors.navy, width: 2),
+                  ),
+                  child: const Icon(
+                    Icons.play_arrow_rounded,
+                    size: 38,
+                    color: ReefColors.navy,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Video volgt binnenkort',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: ReefTypography.labelFamily,
+                    color: ReefColors.paper,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+              ],
                 ),
               ),
-            ],
-          ],
+            ),
+          ),
         ),
       ),
     );
