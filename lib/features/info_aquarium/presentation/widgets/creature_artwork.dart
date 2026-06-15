@@ -7,8 +7,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 
 /// Toont het PNG-artwork van een organisme. Eén gedeelde sprite-sheet
-/// (`aqaurium_dieren.png`) bevat alle 9 dieren — we cropen er per dier
-/// het juiste stukje uit en passen een subtiele zweef-beweging toe.
+/// (`aqaurium_dieren.png`) bevat de 9 oorspronkelijke dieren — we cropen er
+/// per dier het juiste stukje uit en passen een subtiele zweef-beweging toe.
+/// De poetsgarnaal zit niet in die sprite-sheet en heeft een eigen, los
+/// uitgesneden transparante PNG in `animals/cutouts/`.
 class CreatureArtwork extends StatefulWidget {
   const CreatureArtwork({
     required this.creature,
@@ -26,25 +28,37 @@ class CreatureArtwork extends StatefulWidget {
 }
 
 class _CreatureArtworkState extends State<CreatureArtwork> {
-  late final Future<ui.Image> _spriteFuture;
+  late final Future<ui.Image> _imageFuture;
+
+  /// Koralen en de poetsgarnaal komen uit een eigen uitgesneden PNG; de
+  /// overige dieren croppen hun stukje uit de gedeelde sprite-sheet.
+  bool get _useCutout =>
+      _CutoutImage.assetFor(widget.creature.kind) != null;
 
   @override
   void initState() {
     super.initState();
-    _spriteFuture = _SpriteSheet.load();
+    final cutout = _CutoutImage.assetFor(widget.creature.kind);
+    _imageFuture =
+        cutout != null ? _CutoutImage.load(cutout) : _SpriteSheet.load();
   }
 
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<ui.Image>(
-      future: _spriteFuture,
+      future: _imageFuture,
       builder: (context, snapshot) {
         final image = snapshot.data;
         if (image == null) {
-          // Eerste frame voor de sprite klaar is — niets tonen voorkomt flikker.
+          // Eerste frame voor de afbeelding klaar is — niets tonen voorkomt
+          // flikker.
           return const SizedBox.expand();
         }
-        final src = _SpriteSheet.rectFor(widget.creature.kind);
+        // Sprite-dieren croppen hun stukje uit de sheet; de garnaal gebruikt
+        // de volledige (al transparante) PNG.
+        final src = _useCutout
+            ? Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble())
+            : _SpriteSheet.rectFor(widget.creature.kind);
 
         return LayoutBuilder(
           builder: (context, constraints) {
@@ -187,6 +201,9 @@ class _SpriteSheet {
           const Rect.fromLTWH(625, 630, 270, 280),
       CreatureKind.hermitCrab =>
           const Rect.fromLTWH(920, 570, 290, 380),
+      // De poetsgarnaal zit niet in deze sprite-sheet; hij wordt uit zijn
+      // eigen PNG geladen en deze tak wordt voor de garnaal nooit gebruikt.
+      CreatureKind.cleanerShrimp => Rect.zero,
     };
   }
 
@@ -232,5 +249,43 @@ class _SpriteSheet {
     final keyed = await completer.future;
     original.dispose();
     return keyed;
+  }
+}
+
+/// Laadt en cachet losse, al transparant uitgesneden dier-PNG's (geen
+/// witte achtergrond meer, dus geen keying nodig). Wordt gebruikt voor dieren
+/// die niet in de gedeelde sprite-sheet zitten, zoals de poetsgarnaal.
+class _CutoutImage {
+  _CutoutImage._();
+
+  static const _base = 'lib/app/assets/animals/cutouts';
+
+  /// Dieren met een eigen, los uitgesneden PNG i.p.v. een stukje van de
+  /// sprite-sheet: alle koralen/poliepen, de heremietkreeft en de
+  /// poetsgarnaal.
+  static const _assets = <CreatureKind, String>{
+    CreatureKind.fingerLeatherCoral: '$_base/finger_leather_coral.png',
+    CreatureKind.cabbageLeatherCoral: '$_base/cabbage_leather_coral.png',
+    CreatureKind.buttonPolyps: '$_base/button_polyps.png',
+    CreatureKind.coralDisc: '$_base/coral_disc.png',
+    CreatureKind.hermitCrab: '$_base/hermit_crab.png',
+    CreatureKind.cleanerShrimp: '$_base/cleaner_shrimp.png',
+  };
+
+  /// Het asset-pad voor dieren met een eigen uitsnede, of `null` wanneer het
+  /// dier uit de gedeelde sprite-sheet komt.
+  static String? assetFor(CreatureKind kind) => _assets[kind];
+
+  static final Map<String, Future<ui.Image>> _cache = {};
+
+  static Future<ui.Image> load(String asset) {
+    return _cache.putIfAbsent(asset, () => _decode(asset));
+  }
+
+  static Future<ui.Image> _decode(String asset) async {
+    final data = await rootBundle.load(asset);
+    final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
+    final frame = await codec.getNextFrame();
+    return frame.image;
   }
 }

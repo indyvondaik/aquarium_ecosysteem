@@ -90,4 +90,50 @@ const List<QuizQuestion> quizCatalog = [
         'lijkt. Roofvissen happen zo naar de verkeerde kant, terwijl zijn '
         'echte ogen veilig achter een donkere streep verstopt zitten. Slim!',
   ),
+  QuizQuestion(
+    id: 'discosoma_color',
+    dutchName: 'Koraalschijf',
+    scientificName: 'Discosoma sp.',
+    wrongImagePath: 'lib/app/assets/quiz_fotos/discokoraal_fout.png',
+    correctImagePath: 'lib/app/assets/quiz_fotos/IMG_1355.JPG',
+    imageAspectRatio: 3 / 2,
+    question: 'Hier zie je een oranje koraal, maar deze kleur klopt helemaal '
+        'niet. Welke kleur moet die zijn?',
+    questionTip: 'Tip: kijk in het aquarium en vind hem!',
+    answers: [
+      'Regenboog kleur',
+      'Zwart',
+      'Groen',
+    ],
+    correctIndex: 2,
+    correctTitle: 'Goed gedaan!',
+    correctExplanation:
+        'De koraalschijf (Discosoma) in het aquarium is juist fel groen! In '
+        'zijn gladde schijf wonen kleine algen die van zonlicht suiker maken — '
+        'en die algen geven hem zijn groene kleur. Onder het blauwe '
+        'aquariumlicht licht hij soms zelfs op alsof hij van neon is.',
+  ),
+  QuizQuestion(
+    id: 'yellow_wrasse_color',
+    dutchName: 'Gele lipvis',
+    scientificName: 'Halichoeres leucoxanthus',
+    wrongImagePath: 'lib/app/assets/quiz_fotos/lipvis_fout.png',
+    correctImagePath: 'lib/app/assets/quiz_fotos/IMG_1295.JPG',
+    imageAspectRatio: 3 / 2,
+    question: 'Ohnee, de lipvis is van kleur veranderd! Welke kleur moet die '
+        'zijn?',
+    questionTip: 'Tip: kijk in het aquarium en vind hem!',
+    answers: [
+      'Geel',
+      'Blauw',
+      'Wit met zwarte stippen',
+    ],
+    correctIndex: 0,
+    correctTitle: 'Goed gedaan!',
+    correctExplanation:
+        'De gele lipvis is natuurlijk knalgeel — daar dankt hij ook zijn naam '
+        'aan! Overdag flitst hij heen en weer op zoek naar wormpjes en kleine '
+        'kreeftachtigen, en \'s nachts graaft hij zich in het zand om veilig '
+        'te slapen.',
+  ),
 ];

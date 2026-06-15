@@ -187,8 +187,7 @@ class _CreatureTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Basis-tegelgrootte schaalt mee met het schermformaat.
-    final shortest =
-        parentSize.shortestSide.clamp(280.0, 1200.0).toDouble();
+    final shortest = parentSize.shortestSide.clamp(280.0, 1200.0).toDouble();
     final base = shortest * 0.24;
     final width = base * creature.size;
     final height = base * creature.size;
@@ -216,10 +215,7 @@ class _CreatureTile extends StatelessWidget {
             child: AnimatedBuilder(
               animation: ambient,
               builder: (context, _) {
-                return CreatureArtwork(
-                  creature: creature,
-                  time: ambient.value,
-                );
+                return CreatureArtwork(creature: creature, time: ambient.value);
               },
             ),
           ),

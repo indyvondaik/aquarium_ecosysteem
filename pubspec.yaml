@@ -12,6 +12,7 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_riverpod: ^3.3.1
+  video_player: ^2.9.2
 
 dev_dependencies:
   flutter_test:
@@ -23,9 +24,10 @@ flutter:
   assets:
     - lib/app/assets/sound_effects/
     - lib/app/assets/animals/
-    - lib/app/assets/animals/aqaurium_dieren.png
+    - lib/app/assets/animals/cutouts/
     - lib/app/assets/quiz_fotos/
     - lib/app/assets/dier_fotos_hd/
+    - lib/app/assets/informatie_videos/
   fonts:
     - family: Festivo-Letters-No1
       fonts:
