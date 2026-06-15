@@ -15,11 +15,6 @@ class TutorialOverlay extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final visible = ref.watch(tutorialVisibleProvider);
-    if (!visible) {
-      return const SizedBox.shrink();
-    }
-
     return LayoutBuilder(
       builder: (context, constraints) {
         final phone = constraints.maxWidth < 480;
@@ -104,8 +99,8 @@ class TutorialOverlay extends ConsumerWidget {
                             _DelayedStartButton(
                               compact: compact,
                               onPressed: () => ref
-                                  .read(tutorialVisibleProvider.notifier)
-                                  .dismiss(),
+                                  .read(ecosystemPhaseProvider.notifier)
+                                  .play(),
                             ),
                           ],
                         ),
@@ -123,7 +118,7 @@ class TutorialOverlay extends ConsumerWidget {
               child: ReefHomeButton(
                 onPressed: () {
                   ref.read(reefControllerProvider.notifier).reset();
-                  ref.read(tutorialVisibleProvider.notifier).show();
+                  ref.read(ecosystemPhaseProvider.notifier).restart();
                   ref
                       .read(appScreenProvider.notifier)
                       .goTo(AppScreen.start);
@@ -202,7 +197,7 @@ class _DelayedStartButton extends StatefulWidget {
 }
 
 class _DelayedStartButtonState extends State<_DelayedStartButton> {
-  static const _delay = Duration(seconds: 3);
+  static const _delay = Duration(seconds: 10);
   Timer? _timer;
   bool _ready = false;
 

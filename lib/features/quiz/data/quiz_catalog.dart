@@ -11,11 +11,11 @@ const List<QuizQuestion> quizCatalog = [
     question: 'Wat klopt er niet aan deze foto?',
     questionTip: 'Tip: kijk in het aquarium en vind hem!',
     answers: [
-      'Zwarte masker',
-      'Verkeerde kleur',
-      'Te korte staart',
+      'Staart is te kort',
+      'Oog op verkeerde plek',
+      'Zwarte masker mist',
     ],
-    correctIndex: 0,
+    correctIndex: 2,
     correctTitle: 'Goed gedaan!',
     correctExplanation:
         'De vossenkop heeft eigenlijk een opvallend zwart-wit gezichtsmasker '

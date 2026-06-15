@@ -157,7 +157,7 @@ class _CreatureDetailScreenState extends State<CreatureDetailScreen>
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          creature.category.toUpperCase(),
+                          'TERUG',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: ReefTypography.condensed(

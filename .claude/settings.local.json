@@ -76,7 +76,8 @@
       "Bash(node /c/Users/indyv/Documents/code/aquarium_ecosysteem/.imgtmp/resize.js)",
       "Bash(awk '{print $5, $9}')",
       "Read(//c/c/Users/indyv/Documents/code/aquarium_ecosysteem/lib/app/assets/quiz_fotos/**)",
-      "Bash(node -e \"const fs=require\\('fs'\\);const b=fs.readFileSync\\('lib/app/assets/quiz_fotos/IMG_1355.JPG'\\);let i=2;while\\(i<b.length\\){if\\(b[i]!==0xFF\\){i++;continue;}const m=b[i+1];if\\(m>=0xC0&&m<=0xCF&&m!==0xC4&&m!==0xC8&&m!==0xCC\\){console.log\\('dims',b.readUInt16BE\\(i+7\\)+'x'+b.readUInt16BE\\(i+5\\)\\);break;}i+=2+b.readUInt16BE\\(i+2\\);}\")"
+      "Bash(node -e \"const fs=require\\('fs'\\);const b=fs.readFileSync\\('lib/app/assets/quiz_fotos/IMG_1355.JPG'\\);let i=2;while\\(i<b.length\\){if\\(b[i]!==0xFF\\){i++;continue;}const m=b[i+1];if\\(m>=0xC0&&m<=0xCF&&m!==0xC4&&m!==0xC8&&m!==0xCC\\){console.log\\('dims',b.readUInt16BE\\(i+7\\)+'x'+b.readUInt16BE\\(i+5\\)\\);break;}i+=2+b.readUInt16BE\\(i+2\\);}\")",
+      "Bash(/c/Users/indyv/Documents/flutter/bin/flutter test *)"
     ]
   }
 }

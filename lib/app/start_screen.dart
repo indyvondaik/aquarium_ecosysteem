@@ -1,5 +1,6 @@
 import 'package:aquarium_ecosysteem/app/app_screen.dart';
 import 'package:aquarium_ecosysteem/app/theme/reef_theme.dart';
+import 'package:aquarium_ecosysteem/features/reef_balance/application/tutorial_controller.dart';
 import 'package:aquarium_ecosysteem/features/reef_balance/domain/reef_state.dart';
 import 'package:aquarium_ecosysteem/features/reef_balance/presentation/widgets/reef_scene_panel.dart';
 import 'package:flutter/material.dart';
@@ -115,9 +116,16 @@ class StartScreen extends ConsumerWidget {
                                 icon: Icons.waves_rounded,
                                 label: 'ECOSYSTEEM SPEL',
                                 color: ReefColors.brightAlgae,
-                                onTap: () => ref
-                                    .read(appScreenProvider.notifier)
-                                    .goTo(AppScreen.ecosystem),
+                                onTap: () {
+                                  // Begin altijd bij de keuze-popup: eerst de
+                                  // uitlegvideo of meteen starten.
+                                  ref
+                                      .read(ecosystemPhaseProvider.notifier)
+                                      .restart();
+                                  ref
+                                      .read(appScreenProvider.notifier)
+                                      .goTo(AppScreen.ecosystem);
+                                },
                               ),
                             ],
                           ),

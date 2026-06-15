@@ -252,7 +252,7 @@ class _QuestionView extends StatelessWidget {
   }
 }
 
-class _QuestionPanel extends StatelessWidget {
+class _QuestionPanel extends StatefulWidget {
   const _QuestionPanel({
     required this.question,
     required this.pickedAnswer,
@@ -270,7 +270,36 @@ class _QuestionPanel extends StatelessWidget {
   final VoidCallback onNext;
 
   @override
+  State<_QuestionPanel> createState() => _QuestionPanelState();
+}
+
+class _QuestionPanelState extends State<_QuestionPanel> {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void didUpdateWidget(_QuestionPanel old) {
+    super.didUpdateWidget(old);
+    // Bij een nieuwe vraag weer bovenaan beginnen.
+    if (old.question.id != widget.question.id && _scrollController.hasClients) {
+      _scrollController.jumpTo(0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final question = widget.question;
+    final pickedAnswer = widget.pickedAnswer;
+    final phone = widget.phone;
+    final compact = widget.compact;
+    final onAnswer = widget.onAnswer;
+    final onNext = widget.onNext;
+
     final answered = pickedAnswer != null;
     final isCorrect = answered && pickedAnswer == question.correctIndex;
     final titleSize = phone ? 30.0 : (compact ? 40.0 : 52.0);
@@ -299,118 +328,147 @@ class _QuestionPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Naam + wetenschappelijke naam met witte rand zoals in design.
-          Container(
-            padding: EdgeInsets.symmetric(
-              horizontal: compact ? 14 : 18,
-              vertical: compact ? 10 : 14,
-            ),
-            decoration: BoxDecoration(
-              border: Border.all(color: ReefColors.paper, width: 1.6),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(
-                    question.dutchName.toUpperCase(),
-                    style: ReefTypography.display(
-                      size: titleSize,
-                      color: ReefColors.paper,
+          // De inhoud scrollt als die niet past (bv. een fout antwoord op
+          // een iPad), zodat de uitleg altijd volledig leesbaar blijft.
+          Expanded(
+            child: Scrollbar(
+              controller: _scrollController,
+              child: SingleChildScrollView(
+                controller: _scrollController,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Naam + wetenschappelijke naam met witte rand.
+                    Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: compact ? 14 : 18,
+                        vertical: compact ? 10 : 14,
+                      ),
+                      decoration: BoxDecoration(
+                        border:
+                            Border.all(color: ReefColors.paper, width: 1.6),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              question.dutchName.toUpperCase(),
+                              style: ReefTypography.display(
+                                size: titleSize,
+                                color: ReefColors.paper,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            question.scientificName.toUpperCase(),
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontFamily: ReefTypography.labelFamily,
+                              color:
+                                  ReefColors.paper.withValues(alpha: 0.86),
+                              fontSize: sciSize,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 1.6,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  question.scientificName.toUpperCase(),
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontFamily: ReefTypography.labelFamily,
-                    color: ReefColors.paper.withValues(alpha: 0.86),
-                    fontSize: sciSize,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1.6,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          SizedBox(height: compact ? 14 : 20),
-          Text(
-            question.question.toUpperCase(),
-            style: ReefTypography.condensed(
-              size: questionSize,
-              color: ReefColors.paper,
-            ).copyWith(letterSpacing: 0.8),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            question.questionTip,
-            style: TextStyle(
-              fontFamily: ReefTypography.labelFamily,
-              color: ReefColors.paper.withValues(alpha: 0.75),
-              fontSize: tipSize,
-              fontStyle: FontStyle.italic,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          SizedBox(height: compact ? 14 : 20),
-          if (answered)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Text(
-                (isCorrect ? question.correctTitle : 'Helaas!').toUpperCase(),
-                style: ReefTypography.display(
-                  size: phone ? 28.0 : (compact ? 34.0 : 42.0),
-                  color: ReefColors.paper,
+                    SizedBox(height: compact ? 14 : 20),
+                    Text(
+                      question.question.toUpperCase(),
+                      style: ReefTypography.condensed(
+                        size: questionSize,
+                        color: ReefColors.paper,
+                      ).copyWith(letterSpacing: 0.8),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      question.questionTip,
+                      style: TextStyle(
+                        fontFamily: ReefTypography.labelFamily,
+                        color: ReefColors.paper.withValues(alpha: 0.75),
+                        fontSize: tipSize,
+                        fontStyle: FontStyle.italic,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    SizedBox(height: compact ? 14 : 20),
+                    if (answered)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Text(
+                          (isCorrect ? question.correctTitle : 'Helaas!')
+                              .toUpperCase(),
+                          style: ReefTypography.display(
+                            size: phone ? 28.0 : (compact ? 34.0 : 42.0),
+                            color: ReefColors.paper,
+                          ),
+                        ),
+                      ),
+                    // Na het antwoord: óf alleen de groene juiste knop (goed),
+                    // óf jouw rode pick + de groene juiste eronder (fout) +
+                    // altijd de uitleg. Anders de drie keuzeknoppen.
+                    if (answered) ...[
+                      if (!isCorrect) ...[
+                        _AnswerButton(
+                          label: question.answers[pickedAnswer],
+                          state: _AnswerState.wrong,
+                          onTap: null,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Het juiste antwoord:',
+                          style: TextStyle(
+                            fontFamily: ReefTypography.labelFamily,
+                            color:
+                                ReefColors.paper.withValues(alpha: 0.85),
+                            fontSize:
+                                phone ? 12.0 : (compact ? 14.0 : 16.0),
+                            fontStyle: FontStyle.italic,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                      ],
+                      _AnswerButton(
+                        label: question.answers[question.correctIndex],
+                        state: _AnswerState.correct,
+                        onTap: null,
+                      ),
+                      SizedBox(height: compact ? 14 : 18),
+                      Text(
+                        question.correctExplanation,
+                        style: TextStyle(
+                          fontFamily: ReefTypography.labelFamily,
+                          color: ReefColors.paper,
+                          fontSize: explanationSize,
+                          height: 1.45,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ] else
+                      for (var i = 0; i < question.answers.length; i++) ...[
+                        if (i > 0) const SizedBox(height: 10),
+                        _AnswerButton(
+                          label: question.answers[i],
+                          state: _AnswerState.neutral,
+                          onTap: () => onAnswer(i),
+                        ),
+                      ],
+                  ],
                 ),
               ),
             ),
-          // Vóór het antwoord: drie keuzeknoppen. Na het antwoord: óf alleen
-          // de groene juiste knop (bij goed) óf jouw rode pick + de groene
-          // juiste eronder (bij fout) + altijd de uitleg. Past op een iPad
-          // zonder scrollen.
+          ),
+          // De VOLGENDE-knop blijft altijd onderaan staan, ook als de uitleg
+          // erboven moet scrollen.
           if (answered) ...[
-            if (!isCorrect) ...[
-              _AnswerButton(
-                label: question.answers[pickedAnswer!],
-                state: _AnswerState.wrong,
-                onTap: null,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Het juiste antwoord:',
-                style: TextStyle(
-                  fontFamily: ReefTypography.labelFamily,
-                  color: ReefColors.paper.withValues(alpha: 0.85),
-                  fontSize: phone ? 12.0 : (compact ? 14.0 : 16.0),
-                  fontStyle: FontStyle.italic,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 6),
-            ],
-            _AnswerButton(
-              label: question.answers[question.correctIndex],
-              state: _AnswerState.correct,
-              onTap: null,
-            ),
-            SizedBox(height: compact ? 14 : 18),
-            Flexible(
-              child: Text(
-                question.correctExplanation,
-                style: TextStyle(
-                  fontFamily: ReefTypography.labelFamily,
-                  color: ReefColors.paper,
-                  fontSize: explanationSize,
-                  height: 1.45,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
+            SizedBox(height: compact ? 10 : 12),
             Align(
               alignment: Alignment.bottomRight,
               child: _PrimaryButton(
@@ -420,15 +478,7 @@ class _QuestionPanel extends StatelessWidget {
                 onTap: onNext,
               ),
             ),
-          ] else
-            for (var i = 0; i < question.answers.length; i++) ...[
-              if (i > 0) const SizedBox(height: 10),
-              _AnswerButton(
-                label: question.answers[i],
-                state: _AnswerState.neutral,
-                onTap: () => onAnswer(i),
-              ),
-            ],
+          ],
         ],
       ),
     );

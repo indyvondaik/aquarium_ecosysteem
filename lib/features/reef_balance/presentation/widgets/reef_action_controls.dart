@@ -73,6 +73,29 @@ class ReefResetButton extends StatelessWidget {
   }
 }
 
+class ReefTutorialButton extends StatelessWidget {
+  const ReefTutorialButton({required this.onPressed, super.key});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: 'Uitlegvideo kijken',
+      child: IconButton.filled(
+        onPressed: onPressed,
+        style: IconButton.styleFrom(
+          backgroundColor: ReefColors.paper.withValues(alpha: 0.94),
+          foregroundColor: ReefColors.navy,
+          side: const BorderSide(color: ReefColors.navy, width: 1.4),
+          visualDensity: VisualDensity.compact,
+        ),
+        icon: const Icon(Icons.ondemand_video_rounded),
+      ),
+    );
+  }
+}
+
 class ReefHomeButton extends StatelessWidget {
   const ReefHomeButton({required this.onPressed, super.key});
 

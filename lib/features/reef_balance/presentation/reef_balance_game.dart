@@ -6,6 +6,7 @@ import 'package:aquarium_ecosysteem/app/theme/reef_theme.dart';
 import 'package:aquarium_ecosysteem/features/reef_balance/application/reef_controller.dart';
 import 'package:aquarium_ecosysteem/features/reef_balance/application/tutorial_controller.dart';
 import 'package:aquarium_ecosysteem/features/reef_balance/domain/reef_state.dart';
+import 'package:aquarium_ecosysteem/features/reef_balance/presentation/widgets/ecosystem_choice_overlay.dart';
 import 'package:aquarium_ecosysteem/features/reef_balance/presentation/widgets/reef_action_controls.dart';
 import 'package:aquarium_ecosysteem/features/reef_balance/presentation/widgets/reef_scene_panel.dart';
 import 'package:aquarium_ecosysteem/features/reef_balance/presentation/widgets/tutorial_overlay.dart';
@@ -29,8 +30,9 @@ class ReefBalanceGame extends ConsumerWidget {
           final edge = phone ? 8.0 : (compact ? 10.0 : 18.0);
           final safe = MediaQuery.paddingOf(context);
           final resetWidth = phone ? 48.0 : (compact ? 56.0 : 64.0);
-          // Drie knoppen rechtsboven (home + mute + reset) — reserveer ruimte.
-          final controlsWidth = resetWidth * 3 + 16;
+          // Vier knoppen rechtsboven (uitleg + mute + reset + home) —
+          // reserveer ruimte.
+          final controlsWidth = resetWidth * 4 + 24;
           final titleWidth =
               (constraints.maxWidth -
                       safe.left -
@@ -64,6 +66,12 @@ class ReefBalanceGame extends ConsumerWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    ReefTutorialButton(
+                      onPressed: () => ref
+                          .read(ecosystemPhaseProvider.notifier)
+                          .showTutorial(),
+                    ),
+                    const SizedBox(width: 8),
                     const ReefMuteButton(),
                     const SizedBox(width: 8),
                     ReefResetButton(onReset: controller.reset),
@@ -71,7 +79,7 @@ class ReefBalanceGame extends ConsumerWidget {
                     ReefHomeButton(
                       onPressed: () {
                         controller.reset();
-                        ref.read(tutorialVisibleProvider.notifier).show();
+                        ref.read(ecosystemPhaseProvider.notifier).restart();
                         ref
                             .read(appScreenProvider.notifier)
                             .goTo(AppScreen.start);
@@ -91,12 +99,29 @@ class ReefBalanceGame extends ConsumerWidget {
                   phone: phone,
                 ),
               ),
-              const Positioned.fill(child: TutorialOverlay()),
+              const Positioned.fill(child: _EntryOverlay()),
             ],
           );
         },
       ),
     );
+  }
+}
+
+/// Toont — afhankelijk van de fase — de keuze-popup (uitleg of starten), de
+/// uitleg(video) of niets (tijdens het spelen). Ligt boven op het spel zodat
+/// de spelstand eronder altijd bewaard blijft.
+class _EntryOverlay extends ConsumerWidget {
+  const _EntryOverlay();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final phase = ref.watch(ecosystemPhaseProvider);
+    return switch (phase) {
+      EcosystemPhase.choosing => const EcosystemChoiceOverlay(),
+      EcosystemPhase.tutorial => const TutorialOverlay(),
+      EcosystemPhase.playing => const SizedBox.shrink(),
+    };
   }
 }
 
