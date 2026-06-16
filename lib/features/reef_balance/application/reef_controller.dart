@@ -225,7 +225,7 @@ class ReefController extends Notifier<ReefState> {
   }
 
   void _scheduleAutoReset() {
-    _autoResetTimer = Timer(const Duration(seconds: 9), () {
+    _autoResetTimer = Timer(const Duration(seconds: 5), () {
       reset();
     });
   }

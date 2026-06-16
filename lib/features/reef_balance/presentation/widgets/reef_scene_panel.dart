@@ -48,6 +48,35 @@ class _ReefScenePanelState extends ConsumerState<ReefScenePanel>
   int _nextBubbleId = 0;
   late int _lastReefEventId;
 
+  // Zink-animatie: zodra het rif uit balans is draaien de sippe vissen op de
+  // kop en zakken ze naar de bodem; bij herstel komen ze weer overeind.
+  static const Duration _sinkDuration = Duration(milliseconds: 1400);
+  bool _fishSad = false;
+  Duration _sinkChangedAt = Duration.zero;
+  double _sinkAtChange = 0.0;
+
+  static bool _isReefSad(ReefState reef) {
+    return switch (reef.mood) {
+      ReefMood.algaeBloom ||
+      ReefMood.hungry ||
+      ReefMood.overCleaned ||
+      ReefMood.crowded =>
+        true,
+      ReefMood.thriving || ReefMood.balanced => false,
+    };
+  }
+
+  /// De huidige, soepel geanimeerde zink-waarde (0 = normaal, 1 = op de kop op
+  /// de bodem). Wordt elke frame opnieuw berekend zodat de overgang vloeit.
+  double _sinkProgress() {
+    final target = _fishSad ? 1.0 : 0.0;
+    final elapsed = _clock.elapsed - _sinkChangedAt;
+    final t = (elapsed.inMicroseconds / _sinkDuration.inMicroseconds)
+        .clamp(0.0, 1.0);
+    final eased = Curves.easeInOut.transform(t);
+    return _sinkAtChange + (target - _sinkAtChange) * eased;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -64,6 +93,8 @@ class _ReefScenePanelState extends ConsumerState<ReefScenePanel>
       duration: const Duration(seconds: 1),
     )..addListener(_onInteractionTick);
     _lastReefEventId = widget.reef.eventId;
+    _fishSad = _isReefSad(widget.reef);
+    _sinkAtChange = _fishSad ? 1.0 : 0.0;
   }
 
   @override
@@ -72,6 +103,14 @@ class _ReefScenePanelState extends ConsumerState<ReefScenePanel>
     if (widget.reef.eventId != _lastReefEventId) {
       _lastReefEventId = widget.reef.eventId;
       _burstController.forward(from: 0);
+    }
+    // Wisselt de balans (sip <-> blij)? Anker de zink-animatie op de huidige
+    // waarde zodat de overgang soepel verloopt, ook midden in een beweging.
+    final sadNow = _isReefSad(widget.reef);
+    if (sadNow != _fishSad) {
+      _sinkAtChange = _sinkProgress();
+      _sinkChangedAt = _clock.elapsed;
+      _fishSad = sadNow;
     }
   }
 
@@ -243,6 +282,7 @@ class _ReefScenePanelState extends ConsumerState<ReefScenePanel>
                         now: _clock.elapsed,
                         interactions: interactions,
                         showInhabitants: !widget.decorative,
+                        sink: widget.decorative ? 0.0 : _sinkProgress(),
                       );
                     },
                   ),

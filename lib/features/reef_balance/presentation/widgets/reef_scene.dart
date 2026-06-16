@@ -14,6 +14,7 @@ class ReefScene extends StatelessWidget {
     required this.now,
     this.interactions = ReefSceneInteractions.empty,
     this.showInhabitants = true,
+    this.sink = 0,
     super.key,
   });
 
@@ -28,6 +29,10 @@ class ReefScene extends StatelessWidget {
   /// blijven. Gebruikt door de startscherm-achtergrond.
   final bool showInhabitants;
 
+  /// 0..1 — hoe ver de sippe vissen op de kop naar de bodem zijn gezakt
+  /// wanneer het rif uit balans is. 0 = gewoon zwemmen.
+  final double sink;
+
   @override
   Widget build(BuildContext context) {
     return CustomPaint(
@@ -38,6 +43,7 @@ class ReefScene extends StatelessWidget {
         now: now,
         interactions: interactions,
         showInhabitants: showInhabitants,
+        sink: sink,
       ),
       child: const SizedBox.expand(),
     );
@@ -52,6 +58,7 @@ class _ReefScenePainter extends CustomPainter {
     required this.now,
     required this.interactions,
     required this.showInhabitants,
+    required this.sink,
   });
 
   final ReefState reef;
@@ -60,6 +67,7 @@ class _ReefScenePainter extends CustomPainter {
   final Duration now;
   final ReefSceneInteractions interactions;
   final bool showInhabitants;
+  final double sink;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -345,6 +353,31 @@ class _ReefScenePainter extends CustomPainter {
         continue;
       }
 
+      // Sippe vissen (rif uit balans) draaien op de kop en zakken naar de
+      // bodem, zodat je echt ziet dat ze het niet goed hebben.
+      var bellyUp = 0.0;
+      if (sink > 0 && dart == null) {
+        final fishSink = (sink * 1.12 - (index % 4) * 0.05).clamp(0.0, 1.0);
+        bellyUp = fishSink;
+        // Net boven de algen en de rifbodemrand laten rusten — laag genoeg om
+        // 'dood' te lijken, maar nog volledig zichtbaar (de bodem wordt ná de
+        // vissen getekend en zou ze anders bedekken).
+        final band = size.height * (0.56 + (index % 3) * 0.02);
+        final targetY = math.max(layout.center.dy, band);
+        final drift =
+            math.sin(time * 2 * math.pi + index) * size.height * 0.008;
+        drawPosition = Offset(
+          drawPosition.dx +
+              math.sin(time * 2 * math.pi + index * 1.3) *
+                  size.width *
+                  0.01 *
+                  fishSink,
+          drawPosition.dy +
+              (targetY - drawPosition.dy) * fishSink +
+              drift * fishSink,
+        );
+      }
+
       final body = colors[index % colors.length];
       final accent = colors[(index + 2) % colors.length];
       _drawFish(
@@ -357,6 +390,7 @@ class _ReefScenePainter extends CustomPainter {
             ? accent.withValues(alpha: opacity * 0.92)
             : accent.withValues(alpha: 0.92),
         happy: happy,
+        bellyUp: bellyUp,
       );
     }
   }
@@ -1075,6 +1109,7 @@ class _ReefScenePainter extends CustomPainter {
     required Color body,
     required Color accent,
     bool happy = true,
+    double bellyUp = 0,
   }) {
     final bodyPaint = Paint()..color = body;
     final accentPaint = Paint()..color = accent.withValues(alpha: 0.92);
@@ -1084,6 +1119,10 @@ class _ReefScenePainter extends CustomPainter {
     canvas.save();
     canvas.translate(center.dx, center.dy);
     canvas.scale(facingRight ? 1 : -1, 1);
+    if (bellyUp > 0) {
+      // Vloeiend op de kop draaien (buik omhoog) terwijl de vis zakt.
+      canvas.scale(1, 1 - 2 * bellyUp.clamp(0.0, 1.0));
+    }
 
     final tail = Path()
       ..moveTo(-size * 1.04, 0)
@@ -1299,7 +1338,8 @@ class _ReefScenePainter extends CustomPainter {
         oldDelegate.burst != burst ||
         oldDelegate.now != now ||
         oldDelegate.interactions != interactions ||
-        oldDelegate.showInhabitants != showInhabitants;
+        oldDelegate.showInhabitants != showInhabitants ||
+        oldDelegate.sink != sink;
   }
 }
 
